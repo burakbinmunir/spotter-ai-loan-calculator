@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
 	FlatList,
 	Image,
@@ -50,11 +50,7 @@ const AmortizationAnalysis = () => {
 	const parseFloatSafe = (val: string, fallback = 0) =>
 		isNaN(parseFloat(val)) ? fallback : parseFloat(val);
 
-	useEffect(() => {
-		generateSchedule();
-	}, [loanParams]);
-
-	const generateSchedule = () => {
+	const generateSchedule = useCallback(() => {
 		const loanAmount = parseFloatSafe(loanParams.loanAmount);
 		const annualRate = parseFloatSafe(loanParams.interestRate);
 		const term = parseFloatSafe(loanParams.term);
@@ -116,9 +112,15 @@ const AmortizationAnalysis = () => {
 		}
 
 		setSchedule(scheduleArray);
-	};
+	},[loanParams]);
 
-	const renderScheduleCard = (item: any, index: number) => {
+	useEffect(() => {
+		generateSchedule();
+	}, [generateSchedule]);
+
+
+
+	const renderScheduleCard = (item: any) => {
 		const isBalloon = item.month === 'Balloon';
 
 		return (
@@ -197,7 +199,7 @@ const AmortizationAnalysis = () => {
 			imgSrc: Images.IC_INTEREST_RATE,
 		},
 	];
-	console.log('schedule', schedule);
+
 	return (
 		<View style={styles.container}>
 			<View style={styles.content}>
@@ -245,7 +247,6 @@ const AmortizationAnalysis = () => {
 								value={item.value}
 								imgSrc={item.imgSrc}
 								imgStyle={{
-									marginBottom: MetricsSizes.small,
 									height: 15,
 									width: 15,
 									tintColor: AppColors.white,
@@ -261,7 +262,7 @@ const AmortizationAnalysis = () => {
 						data={schedule}
 						keyExtractor={(item, index) => `${item.month}-${index}`}
 						renderItem={({ item, index }) =>
-							renderScheduleCard(item, index)
+							renderScheduleCard(item)
 						}
 						contentContainerStyle={styles.scheduleContainer}
 						showsVerticalScrollIndicator={false}
