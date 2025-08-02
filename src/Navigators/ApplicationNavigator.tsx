@@ -3,6 +3,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import AmortizationAnalysis from '../Screens/AmortizationAnalysis.tsx';
 import AffordabilityAnalysis from '../Screens/AffordabilityAnalysis.tsx';
 import InterestRateAnalysis from '../Screens/InterestRateAnalysis.tsx';
+import { AppColors } from '../Helpers/Variables.ts';
+import { Image, View } from 'react-native';
+import { Images } from '../Assets/Images';
 
 const Tab = createBottomTabNavigator();
 
@@ -11,20 +14,29 @@ const ApplicationNavigator = () => {
 		<Tab.Navigator
 			screenOptions={{
 				headerShown: true,
-				tabBarActiveTintColor: '#007AFF',
+				headerBackground: () => (
+					<View style={{ flex: 1, backgroundColor: AppColors.emraldGreen }} />
+				),
+				headerTintColor: AppColors.white,
+				tabBarActiveTintColor: AppColors.aquaColor,
 				tabBarInactiveTintColor: '#8E8E93',
 				tabBarStyle: {
-					backgroundColor: '#FFFFFF',
+					backgroundColor: AppColors.emraldGreen,
 					borderTopWidth: 1,
-					borderTopColor: '#E5E5EA',
 				},
 			}}
-		>
+
+			>
 			<Tab.Screen
 				name="AmortizationAnalysis"
 				component={AmortizationAnalysis}
 				options={{
 					title: 'Amortization Analysis',
+					tabBarIcon: ({ focused }) => (
+						<Image style={{ height: 20, width: 20, tintColor: focused ? AppColors.aquaColor : '#8E8E93', }}
+							   source={Images.IC_BAR_CHART}
+						/>
+					)
 				}}
 			/>
 			<Tab.Screen
@@ -32,6 +44,11 @@ const ApplicationNavigator = () => {
 				component={AffordabilityAnalysis}
 				options={{
 					title: 'Affordability Analysis',
+					tabBarIcon: ({ focused }) => (
+						<Image style={{ height: 20, width: 20, tintColor: focused ? AppColors.aquaColor : '#8E8E93', }}
+							   source={Images.IC_PIE_CHART}
+						/>
+					)
 				}}
 			/>
 			<Tab.Screen
@@ -39,6 +56,11 @@ const ApplicationNavigator = () => {
 				component={InterestRateAnalysis}
 				options={{
 					title: 'Interest Rate Analysis',
+					tabBarIcon: ({ focused }) => (
+						<Image style={{ height: 20, width: 20, tintColor: focused ? AppColors.aquaColor : '#8E8E93', }}
+							   source={Images.IC_ARROW_ABOVE}
+						/>
+					)
 				}}
 			/>
 		</Tab.Navigator>

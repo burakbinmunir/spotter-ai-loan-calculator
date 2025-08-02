@@ -1,18 +1,58 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+	KeyboardAvoidingView,
+	Platform,
+	ScrollView,
+	StyleSheet,
+	View,
+} from 'react-native';
+import { Controller, useForm } from 'react-hook-form';
+import {
+	AppColors,
+	INTEREST_RATE_FALLBACKS,
+	MetricsSizes,
+} from '../Helpers/Variables.ts';
+import ResultCard from '../Components/ResultCard.tsx';
+import CustomTextInput from '../Components/CustomTextInput.tsx';
+import { BlurView } from '@react-native-community/blur';
 
 const InterestRateAnalysis = () => {
-	const [loanAmount, setLoanAmount] = useState('15000');
-	const [monthlyPayment, setMonthlyPayment] = useState('2750');
-	const [loanTerm, setLoanTerm] = useState('60');
-	const [balloonPayment, setBalloonPayment] = useState('0');
+	const {
+		control,
+		watch,
+		formState: { errors },
+		setError,
+		clearErrors,
+	} = useForm({
+		defaultValues: {
+			loanAmount: INTEREST_RATE_FALLBACKS.loanAmount,
+			monthlyPayment: INTEREST_RATE_FALLBACKS.monthlyPayment,
+			loanTerm: INTEREST_RATE_FALLBACKS.loanTerm,
+			balloonPayment: INTEREST_RATE_FALLBACKS.balloonPayment,
+		},
+	});
+
+	const loanAmount = watch('loanAmount');
+	const monthlyPayment = watch('monthlyPayment');
+	const loanTerm = watch('loanTerm');
+	const balloonPayment = watch('balloonPayment');
+
 	const [annualRate, setAnnualRate] = useState('0.00');
 
 	useEffect(() => {
-		const parsedLoanAmount = parseFloat(loanAmount);
-		const parsedMonthlyPayment = parseFloat(monthlyPayment);
-		const parsedLoanTerm = parseInt(loanTerm);
-		const parsedBalloon = parseFloat(balloonPayment);
+		const parsedLoanAmount = parseFloat(
+			loanAmount || INTEREST_RATE_FALLBACKS.loanAmount,
+		);
+		const parsedMonthlyPayment = parseFloat(
+			monthlyPayment || INTEREST_RATE_FALLBACKS.monthlyPayment,
+		);
+		const parsedLoanTerm = parseInt(
+			loanTerm || INTEREST_RATE_FALLBACKS.loanTerm,
+			10,
+		);
+		const parsedBalloon = parseFloat(
+			balloonPayment || INTEREST_RATE_FALLBACKS.balloonPayment,
+		);
 
 		if (
 			!isNaN(parsedLoanAmount) &&
@@ -28,11 +68,97 @@ const InterestRateAnalysis = () => {
 				loanTerm: parsedLoanTerm,
 				balloonPayment: parsedBalloon,
 			});
-			setAnnualRate(result.toFixed(2));
+			setAnnualRate(result !== null ? result.toFixed(2) : '0.00');
 		} else {
 			setAnnualRate('0.00');
 		}
 	}, [loanAmount, monthlyPayment, loanTerm, balloonPayment]);
+
+	useEffect(() => {
+		const parsedLoanAmount =
+			loanAmount === ''
+				? parseFloat(INTEREST_RATE_FALLBACKS.loanAmount)
+				: parseFloat(loanAmount);
+		const parsedMonthly =
+			monthlyPayment === ''
+				? parseFloat(INTEREST_RATE_FALLBACKS.monthlyPayment)
+				: parseFloat(monthlyPayment);
+		const parsedTerm =
+			loanTerm === ''
+				? parseFloat(INTEREST_RATE_FALLBACKS.loanTerm)
+				: parseInt(loanTerm, 10);
+		const parsedBalloon =
+			balloonPayment === ''
+				? parseFloat(INTEREST_RATE_FALLBACKS.balloonPayment)
+				: parseFloat(balloonPayment);
+
+		const totalPaid = parsedMonthly * parsedTerm + parsedBalloon;
+		console.log('totalPaid', totalPaid);
+		console.log('parsedLoanAmount', parsedLoanAmount);
+		// Loan amount must be at least 0.01
+		if (parsedLoanAmount < 0.01) {
+			setError('loanAmount', {
+				type: 'manual',
+				message: 'Loan amount must be at least 0.01',
+			});
+		} else {
+			clearErrors('loanAmount');
+		}
+
+		if (totalPaid < parsedLoanAmount) {
+			setError('monthlyPayment', {
+				type: 'manual',
+				message: 'Total payments less than principal.',
+			});
+		} else if (parsedMonthly === -1) {
+			setError('monthlyPayment', {
+				type: 'manual',
+				message: 'Value must be at least 0.',
+			});
+		} else if (parsedMonthly === 0) {
+			setError('monthlyPayment', {
+				type: 'manual',
+				message: 'Total payments less than principal',
+			});
+		} else {
+			clearErrors('monthlyPayment');
+		}
+
+		if (parsedTerm < 1) {
+			setError('loanTerm', {
+				type: 'manual',
+				message: 'Value must be at least 1.',
+			});
+		} else if (parsedTerm > 1200) {
+			setError('loanTerm', {
+				type: 'manual',
+				message: 'Value cannot exceed 1200.',
+			});
+		} else {
+			clearErrors('loanTerm');
+		}
+
+		if (parsedBalloon > parsedLoanAmount) {
+			setError('balloonPayment', {
+				type: 'manual',
+				message: 'Balloon payment too high for loan terms',
+			});
+		} else if (parsedBalloon < 0) {
+			setError('balloonPayment', {
+				type: 'manual',
+				message: 'Balloon payment cannot be negative',
+			});
+		} else {
+			clearErrors('balloonPayment');
+		}
+	}, [
+		loanAmount,
+		monthlyPayment,
+		loanTerm,
+		balloonPayment,
+		setError,
+		clearErrors,
+	]);
 
 	const calculateAnnualInterestRate = ({
 		loanAmount,
@@ -44,131 +170,200 @@ const InterestRateAnalysis = () => {
 		monthlyPayment: number;
 		loanTerm: number;
 		balloonPayment: number;
-	}): number => {
-		// Use binary search with compound interest formula
-		const tolerance = 1e-6;
-		let low = 0.001; // 0.1% monthly rate
-		let high = 2; // 200% monthly rate
-		let guess = 0;
+	}): number | null => {
+		const maxIterations = 100;
+		const precision = 1e-9;
+		let lower = 0.0000001;
+		let upper = 1.0;
 
-		const calculateTotalPayment = (monthlyRate: number) => {
-			let totalPayment = 0;
-			for (let i = 1; i <= loanTerm; i++) {
-				totalPayment += monthlyPayment / Math.pow(1 + monthlyRate, i);
-			}
-			totalPayment +=
-				balloonPayment / Math.pow(1 + monthlyRate, loanTerm);
-			return totalPayment;
+		const f = (r: number): number => {
+			const factor = 1 - Math.pow(1 + r, -loanTerm);
+			const discounted = factor / r;
+			const balloonDiscount = balloonPayment / Math.pow(1 + r, loanTerm);
+			return monthlyPayment * discounted + balloonDiscount - loanAmount;
 		};
 
-		let iteration = 0;
-		while (high - low > tolerance && iteration < 100) {
-			guess = (low + high) / 2;
-			const totalPayment = calculateTotalPayment(guess);
-
-			if (totalPayment > loanAmount) {
-				low = guess;
-			} else {
-				high = guess;
-			}
-			iteration++;
+		// Dynamically adjust upper bound to ensure root is bracketed
+		let attempts = 0;
+		while (f(lower) * f(upper) > 0 && attempts < 20) {
+			upper *= 2;
+			attempts++;
 		}
 
-		const annualRate = guess * 12 * 100;
-		return Number.isNaN(annualRate) ? 0 : Math.min(annualRate, 1000);
+		if (f(lower) * f(upper) > 0) return null; // still not bracketed
+
+		for (let i = 0; i < maxIterations; i++) {
+			const mid = (lower + upper) / 2;
+			const fMid = f(mid);
+
+			if (Math.abs(fMid) < precision) {
+				const annualRate = mid * 12; // Nominal APR (simple)
+
+				return annualRate * 100;
+			}
+
+			if (f(lower) * fMid < 0) {
+				upper = mid;
+			} else {
+				lower = mid;
+			}
+		}
+
+		return null;
 	};
 
 	return (
-		<ScrollView contentContainerStyle={styles.container}>
-			<Text style={styles.title}>Interest Rate Analysis</Text>
-			<Text style={styles.subtitle}>
-				Calculated based on your loan parameters
-			</Text>
+		<KeyboardAvoidingView
+			style={styles.container}
+			behavior={Platform.select({ ios: 'padding' })}
+		>
+			<ScrollView
+				contentContainerStyle={styles.scrollContent}
+				keyboardShouldPersistTaps="handled"
+			>
+				<View style={styles.loanBlurContainer}>
+					<BlurView
+						style={StyleSheet.absoluteFill}
+						blurAmount={11}
+						blurType="light"
+						overlayColor={AppColors.placeholderTextColor}
+						reducedTransparencyFallbackColor="white"
+					/>
 
-			<TextInput
-				style={styles.input}
-				placeholder="Loan Amount"
-				value={loanAmount}
-				keyboardType="numeric"
-				onChangeText={setLoanAmount}
-			/>
-			<TextInput
-				style={styles.input}
-				placeholder="Monthly Payment"
-				value={monthlyPayment}
-				keyboardType="numeric"
-				onChangeText={setMonthlyPayment}
-			/>
-			<TextInput
-				style={styles.input}
-				placeholder="Loan Term (months)"
-				value={loanTerm}
-				keyboardType="numeric"
-				onChangeText={setLoanTerm}
-			/>
-			<TextInput
-				style={styles.input}
-				placeholder="Balloon Payment"
-				value={balloonPayment}
-				keyboardType="numeric"
-				onChangeText={setBalloonPayment}
-			/>
+					<ResultCard
+						title="Annual Interest Rate"
+						value={
+							Object.keys(errors).length > 0
+								? 'Invalid Input'
+								: Number(annualRate) >= 100
+								? '100.00%'
+								: Number(annualRate) < 0
+								? 'Rate < 0%'
+								: `${annualRate}%`
+						}
+						contentContainerStyle={styles.resultCardContainer}
+					/>
+				</View>
+				<View style={styles.inputSection}>
+					<BlurView
+						style={StyleSheet.absoluteFill}
+						blurAmount={11}
+						blurType="light"
+						overlayColor={AppColors.placeholderTextColor}
+						reducedTransparencyFallbackColor="white"
+					/>
+					<View>
+						<Controller
+							control={control}
+							name="loanAmount"
+							render={({ field: { onChange, value } }) => (
+								<CustomTextInput
+									label="Loan Amount"
+									placeholder={
+										INTEREST_RATE_FALLBACKS.loanAmount
+									}
+									keyboardType="numeric"
+									value={value}
+									onChangeText={onChange}
+									error={errors.loanAmount?.message}
+								/>
+							)}
+						/>
 
-			<View style={styles.resultBox}>
-				<Text style={styles.resultLabel}>Annual Interest Rate</Text>
-				<Text style={styles.resultValue}>{annualRate}%</Text>
-			</View>
-		</ScrollView>
+						<Controller
+							control={control}
+							name="monthlyPayment"
+							render={({ field: { onChange, value } }) => (
+								<CustomTextInput
+									label="Monthly Payment"
+									placeholder={
+										INTEREST_RATE_FALLBACKS.monthlyPayment
+									}
+									keyboardType="numeric"
+									value={value}
+									onChangeText={onChange}
+									error={errors.monthlyPayment?.message}
+								/>
+							)}
+						/>
+
+						<Controller
+							control={control}
+							name="loanTerm"
+							render={({ field: { onChange, value } }) => (
+								<CustomTextInput
+									label="Loan Term (months)"
+									placeholder={
+										INTEREST_RATE_FALLBACKS.loanTerm
+									}
+									keyboardType="numeric"
+									value={value}
+									onChangeText={onChange}
+									error={errors.loanTerm?.message}
+								/>
+							)}
+						/>
+
+						<Controller
+							control={control}
+							name="balloonPayment"
+							render={({ field: { onChange, value } }) => (
+								<CustomTextInput
+									label="Balloon Payment"
+									placeholder={
+										INTEREST_RATE_FALLBACKS.balloonPayment
+									}
+									keyboardType="numeric"
+									value={value}
+									onChangeText={onChange}
+									error={errors.balloonPayment?.message}
+								/>
+							)}
+						/>
+					</View>
+				</View>
+			</ScrollView>
+		</KeyboardAvoidingView>
 	);
 };
 
 const styles = StyleSheet.create({
 	container: {
-		padding: 24,
-		backgroundColor: '#F2F2F7',
-		alignItems: 'center',
+		backgroundColor: AppColors.royalBlue,
+		flex: 1,
 	},
 	title: {
 		fontSize: 22,
 		fontWeight: 'bold',
 		marginBottom: 4,
-		color: '#000',
+		color: '#fff',
+		textAlign: 'center',
 	},
-	subtitle: {
-		fontSize: 14,
-		color: '#555',
-		marginBottom: 24,
-	},
-	input: {
-		width: '100%',
-		backgroundColor: '#fff',
-		borderRadius: 8,
-		paddingHorizontal: 14,
-		paddingVertical: 10,
-		marginBottom: 14,
-		fontSize: 16,
-		borderColor: '#ddd',
-		borderWidth: 1,
-	},
-	resultBox: {
-		marginTop: 20,
+	inputSection: {
+		borderRadius: 16,
 		padding: 16,
-		backgroundColor: '#fff',
-		borderRadius: 8,
-		width: '100%',
-		alignItems: 'center',
-		borderColor: '#ccc',
+		overflow: 'hidden',
+		marginVertical: 20,
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 6 },
+		shadowOpacity: 0.1,
+		shadowRadius: 10,
+		elevation: 6,
 		borderWidth: 1,
+		borderColor: 'rgba(255,255,255,0.2)',
 	},
-	resultLabel: {
-		fontSize: 16,
-		color: '#888',
+	loanBlurContainer: {
+		padding: 6,
+		borderRadius: 16,
+		overflow: 'hidden',
 	},
-	resultValue: {
-		fontSize: 28,
-		fontWeight: 'bold',
-		color: '#0A84FF',
-		marginTop: 8,
+	scrollContent: {
+		padding: 24,
+		paddingBottom: 40,
+	},
+	resultCardContainer: {
+		backgroundColor: AppColors.aquaColor,
+		margin: MetricsSizes.medium,
 	},
 });
 

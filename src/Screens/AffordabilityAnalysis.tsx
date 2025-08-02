@@ -2,130 +2,315 @@ import React, { useEffect, useState } from 'react';
 import {
 	KeyboardAvoidingView,
 	Platform,
+	SafeAreaView,
+	ScrollView,
 	StyleSheet,
 	Text,
-	TextInput,
 	View,
 } from 'react-native';
+import { AFFORDABILITY_FALLBACKS, AppColors } from '../Helpers/Variables.ts';
+import CustomTextInput from '../Components/CustomTextInput.tsx';
+import { Controller, useForm } from 'react-hook-form';
+import ResultCard from '../Components/ResultCard.tsx';
+import { BlurView } from '@react-native-community/blur';
 
 const AffordabilityAnalysis = () => {
-	const [desiredPayment, setDesiredPayment] = useState('2500');
-	const [interestRate, setInterestRate] = useState('11.9');
-	const [loanTerm, setLoanTerm] = useState('60');
-	const [downPayment, setDownPayment] = useState('0');
-
 	const [maxLoanAmount, setMaxLoanAmount] = useState('');
 	const [purchasePrice, setPurchasePrice] = useState('');
+	const {
+		control,
+		formState: { errors },
+		setError,
+		clearErrors,
+		watch,
+	} = useForm({
+		defaultValues: {
+			desiredPayment: '2500',
+			interestRate: '11.9',
+			loanTerm: '60',
+			downPayment: '0',
+		},
+	});
+	const desiredPayment = watch('desiredPayment');
+	const interestRate = watch('interestRate');
+	const loanTerm = watch('loanTerm');
+	const downPayment = watch('downPayment');
 
 	useEffect(() => {
-		const P = parseFloat(desiredPayment);
-		const r = parseFloat(interestRate) / 100 / 12;
-		const n = parseFloat(loanTerm);
-		const down = parseFloat(downPayment) || 0;
+		const P = parseFloat(
+			desiredPayment || AFFORDABILITY_FALLBACKS.desiredPayment,
+		);
+		const r =
+			parseFloat(interestRate || AFFORDABILITY_FALLBACKS.interestRate) /
+			100 /
+			12;
+		const n = parseFloat(loanTerm || AFFORDABILITY_FALLBACKS.loanTerm);
+		const down = parseFloat(
+			downPayment || AFFORDABILITY_FALLBACKS.downPayment,
+		);
 
-		if (!isNaN(P) && !isNaN(r) && r > 0 && !isNaN(n) && n > 0) {
-			const loanAmount = (P * (1 - Math.pow(1 + r, -n))) / r;
-			const total = loanAmount + down;
+		const loanAmount = (P * (1 - Math.pow(1 + r, -n))) / r;
+		const total = loanAmount + down;
 
-			setMaxLoanAmount(`$${loanAmount.toFixed(2)}`);
-			setPurchasePrice(`$${total.toFixed(2)}`);
-		} else {
-			setMaxLoanAmount('');
-			setPurchasePrice('');
-		}
+		setMaxLoanAmount(`$${loanAmount.toFixed(2)}`);
+		setPurchasePrice(`$${total.toFixed(2)}`);
 	}, [desiredPayment, interestRate, loanTerm, downPayment]);
 
+	useEffect(() => {
+		const P = parseFloat(
+			desiredPayment || AFFORDABILITY_FALLBACKS.desiredPayment,
+		);
+		const r =
+			parseFloat(interestRate || AFFORDABILITY_FALLBACKS.interestRate) /
+			100 /
+			12;
+		const n = parseFloat(loanTerm || AFFORDABILITY_FALLBACKS.loanTerm);
+		const down = parseFloat(
+			downPayment || AFFORDABILITY_FALLBACKS.downPayment,
+		);
+		const decimalRegex = /^\d*\.?\d*$/;
+
+		// Validation: Desired Payment
+		if (!decimalRegex.test(desiredPayment)) {
+			setError('desiredPayment', {
+				type: 'manual',
+				message: 'Enter a valid number',
+			});
+		} else if (isNaN(P) || P < 0.01) {
+			setError('desiredPayment', {
+				type: 'manual',
+				message: 'Value must be at least 0.01',
+			});
+		} else {
+			clearErrors('desiredPayment');
+		}
+
+		// Validation: Interest Rate
+		if (!decimalRegex.test(interestRate)) {
+			setError('interestRate', {
+				type: 'manual',
+				message: 'Enter a valid number',
+			});
+		} else if (isNaN(r) || r <= 0) {
+			setError('interestRate', {
+				type: 'manual',
+				message: 'Value must be at least 0.01',
+			});
+		} else {
+			clearErrors('interestRate');
+		}
+
+		// Validation: Loan Term
+		if (!decimalRegex.test(loanTerm)) {
+			setError('loanTerm', {
+				type: 'manual',
+				message: 'Enter a valid number',
+			});
+		} else if (!decimalRegex.test(loanTerm)) {
+			setError('loanTerm', {
+				type: 'manual',
+				message: 'Enter a valid number',
+			});
+		} else if (isNaN(n) || n < 1) {
+			setError('loanTerm', {
+				type: 'manual',
+				message: 'Value must be at least 1',
+			});
+		} else if (n > 1200) {
+			setError('loanTerm', {
+				type: 'manual',
+				message: 'Value cannot exceed 1200',
+			});
+		} else {
+			clearErrors('loanTerm');
+		}
+
+		// Validation: Down Payment
+		if (!decimalRegex.test(downPayment)) {
+			setError('downPayment', {
+				type: 'manual',
+				message: 'Enter a valid number',
+			});
+		} else if (isNaN(down) || down < 0) {
+			setError('downPayment', {
+				type: 'manual',
+				message: 'Value must be at least 0',
+			});
+		} else {
+			clearErrors('downPayment');
+		}
+	}, [
+		desiredPayment,
+		interestRate,
+		loanTerm,
+		downPayment,
+		setError,
+		clearErrors,
+	]);
+
 	return (
-		<KeyboardAvoidingView
-			style={styles.container}
-			behavior={Platform.select({ ios: 'padding' })}
-		>
-			<Text style={styles.title}>Affordability Analysis</Text>
+		<SafeAreaView style={styles.safeArea}>
+			<KeyboardAvoidingView
+				style={styles.container}
+				behavior={Platform.select({ ios: 'padding' })}
+			>
+				<ScrollView
+					style={styles.scrollView}
+					contentContainerStyle={styles.scrollContent}
+					showsVerticalScrollIndicator={false}
+				>
+					{maxLoanAmount !== '' && (
+						<View style={styles.blurContainer}>
+							<BlurView
+								style={StyleSheet.absoluteFill}
+								blurAmount={11}
+								blurType="light"
+								overlayColor={AppColors.placeholderTextColor}
+								reducedTransparencyFallbackColor="white"
+							/>
+							<View style={styles.resultsGrid}>
+								<ResultCard
+									title="Maximum Loan Amount"
+									value={
+										Object.keys(errors)?.length > 0
+											? '$0.00'
+											: maxLoanAmount
+									}
+								/>
+								<ResultCard
+									title="Total Purchase Price"
+									value={
+										Object.keys(errors)?.length > 0
+											? '$0.00'
+											: purchasePrice
+									}
+									contentContainerStyle={{
+										backgroundColor: AppColors.aquaColor,
+									}}
+								/>
+							</View>
+						</View>
+					)}
+					<View style={styles.loanBlurContainer}>
+						<BlurView
+							style={StyleSheet.absoluteFill}
+							blurAmount={10}
+							blurType="light"
+							overlayColor={AppColors.placeholderTextColor}
+							reducedTransparencyFallbackColor="white"
+						/>
+						<View>
+							<Text style={styles.sectionTitle}>
+								Loan Parameters
+							</Text>
 
-			{maxLoanAmount !== '' && (
-				<View style={styles.resultBox}>
-					<Text style={styles.resultTitle}>Maximum Loan Amount</Text>
-					<Text style={styles.resultValue}>{maxLoanAmount}</Text>
+							<Controller
+								control={control}
+								name="desiredPayment"
+								render={({ field: { onChange, value } }) => (
+									<CustomTextInput
+										label="Desired Payment"
+										placeholder="2500"
+										value={value || ''}
+										onChangeText={onChange}
+										keyboardType={'numeric'}
+										error={errors?.desiredPayment?.message}
+									/>
+								)}
+							/>
 
-					<Text style={styles.resultTitle}>Total Purchase Price</Text>
-					<Text style={styles.resultValue}>{purchasePrice}</Text>
-				</View>
-			)}
+							<Controller
+								control={control}
+								name="interestRate"
+								render={({ field: { onChange, value } }) => (
+									<CustomTextInput
+										label="Interest Rate"
+										placeholder="11.9"
+										value={value || ''}
+										onChangeText={onChange}
+										keyboardType={'numeric'}
+										error={errors?.interestRate?.message}
+									/>
+								)}
+							/>
 
-			<TextInput
-				placeholder="Desired Payment"
-				style={styles.input}
-				keyboardType="numeric"
-				value={desiredPayment}
-				onChangeText={setDesiredPayment}
-			/>
-			<TextInput
-				placeholder="Interest Rate (%)"
-				style={styles.input}
-				keyboardType="numeric"
-				value={interestRate}
-				onChangeText={setInterestRate}
-			/>
-			<TextInput
-				placeholder="Loan Term (months)"
-				style={styles.input}
-				keyboardType="numeric"
-				value={loanTerm}
-				onChangeText={setLoanTerm}
-			/>
-			<TextInput
-				placeholder="Down Payment"
-				style={styles.input}
-				keyboardType="numeric"
-				value={downPayment}
-				onChangeText={setDownPayment}
-			/>
-		</KeyboardAvoidingView>
+							<Controller
+								control={control}
+								name="loanTerm"
+								render={({ field: { onChange, value } }) => (
+									<CustomTextInput
+										label="Loan Term (months)"
+										placeholder="60"
+										value={value || ''}
+										onChangeText={onChange}
+										keyboardType={'numeric'}
+										error={errors?.loanTerm?.message}
+									/>
+								)}
+							/>
+
+							<Controller
+								control={control}
+								name="downPayment"
+								render={({ field: { onChange, value } }) => (
+									<CustomTextInput
+										label="Down Payment"
+										placeholder="0"
+										value={value || ''}
+										onChangeText={onChange}
+										keyboardType={'numeric'}
+										error={errors?.downPayment?.message}
+									/>
+								)}
+							/>
+						</View>
+					</View>
+				</ScrollView>
+			</KeyboardAvoidingView>
+		</SafeAreaView>
 	);
 };
 
 const styles = StyleSheet.create({
+	safeArea: {
+		flex: 1,
+	},
 	container: {
 		flex: 1,
-		padding: 20,
-		backgroundColor: '#F2F2F7',
-		justifyContent: 'center',
+		backgroundColor: AppColors.royalBlue,
+	},
+	scrollView: {
+		flex: 1,
+	},
+	scrollContent: {
+		padding: 24,
+		paddingBottom: 40,
 	},
 	title: {
-		fontSize: 22,
-		fontWeight: '600',
-		marginBottom: 20,
-		textAlign: 'center',
-		color: '#000',
-	},
-	input: {
-		backgroundColor: '#fff',
-		padding: 12,
-		marginBottom: 10,
-		borderRadius: 8,
-		fontSize: 16,
-	},
-	resultBox: {
-		marginBottom: 30,
-		padding: 16,
-		backgroundColor: '#ffffff',
-		borderRadius: 12,
-		shadowColor: '#00000010',
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.1,
-		shadowRadius: 4,
-		elevation: 2,
-	},
-	resultTitle: {
-		fontSize: 16,
-		fontWeight: '500',
-		color: '#333',
-		marginTop: 10,
-	},
-	resultValue: {
-		fontSize: 20,
+		fontSize: 28,
 		fontWeight: '700',
-		color: '#000',
+		color: '#1A1A1A',
+		marginBottom: 8,
+		textAlign: 'center',
+	},
+	resultsGrid: {
+		gap: 12,
+	},
+	sectionTitle: {
+		fontSize: 20,
+		fontWeight: '600',
+		color: AppColors.greyishWhite,
+		marginBottom: 20,
+	},
+	blurContainer: {
+		borderRadius: 16,
+		overflow: 'hidden',
+	},
+	loanBlurContainer: {
+		padding: 16,
+		marginVertical: 20,
+		borderRadius: 16,
+		overflow: 'hidden',
 	},
 });
 

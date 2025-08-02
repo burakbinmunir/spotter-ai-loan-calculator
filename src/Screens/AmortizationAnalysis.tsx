@@ -1,76 +1,110 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
-import Table from '../Components/Table.tsx';
+import {
+	FlatList,
+	Image,
+	ImageProps,
+	ImageSourcePropType,
+	StyleSheet,
+	Text,
+	TouchableOpacity,
+	View,
+} from 'react-native';
+import { AppColors, FontSize, MetricsSizes } from '../Helpers/Variables';
+import { BlurView } from '@react-native-community/blur';
+import LoanParametersModal, {
+	FormData,
+} from '../Components/LoanParametersModal';
+import { Images } from '../Assets/Images';
 
-const DEFAULTS = {
-	loanAmount: 175000,
-	annualRate: 11.9,
-	term: 60,
-	downPayment: 0,
-	balloonPayment: 0,
+interface KeyValueItemProps {
+	keyItem: string;
+	value: string;
+	imgSrc: ImageSourcePropType;
+	imgStyle?: ImageProps;
+}
+
+const KeyValueItem = ({ imgSrc, value, imgStyle }: KeyValueItemProps) => {
+	return (
+		<View
+			style={{
+				alignItems: 'center',
+			}}
+		>
+			<Image source={imgSrc} style={imgStyle} />
+			<Text style={styles.summaryValue}>{value}</Text>
+		</View>
+	);
 };
 
 const AmortizationAnalysis = () => {
-	const [loanAmount, setLoanAmount] = useState(DEFAULTS.loanAmount);
-	const [annualRate, setAnnualRate] = useState(DEFAULTS.annualRate);
-	const [term, setTerm] = useState(DEFAULTS.term);
-	const [downPayment, setDownPayment] = useState(DEFAULTS.downPayment);
-	const [balloonPayment, setBalloonPayment] = useState(
-		DEFAULTS.balloonPayment,
-	);
-	const [schedule, setSchedule] = useState([]);
+	const [schedule, setSchedule] = useState<any[]>([]);
+	const [showInputModal, setShowInputModal] = useState(false);
+	const [loanParams, setLoanParams] = useState<FormData>({
+		loanAmount: '175000',
+		interestRate: '11.9',
+		term: '60',
+		downPayment: '0',
+		balloonPayment: '0',
+	});
 
-	const parseOrDefault = (value: string, fallback: number) => {
-		const parsed = parseFloat(value);
-		return isNaN(parsed) ? fallback : parsed;
-	};
+	const parseFloatSafe = (val: string, fallback = 0) =>
+		isNaN(parseFloat(val)) ? fallback : parseFloat(val);
 
 	useEffect(() => {
 		generateSchedule();
-	}, [loanAmount, annualRate, term, downPayment, balloonPayment]);
+	}, [loanParams]);
 
 	const generateSchedule = () => {
+		const loanAmount = parseFloatSafe(loanParams.loanAmount);
+		const annualRate = parseFloatSafe(loanParams.interestRate);
+		const term = parseFloatSafe(loanParams.term);
+		const downPayment = parseFloatSafe(loanParams.downPayment);
+		const balloonPayment = parseFloatSafe(loanParams.balloonPayment);
+
 		const principal = loanAmount - downPayment;
 		const monthlyRate = annualRate / 100 / 12;
+		const amortizingAmount = principal;
 
-		// Calculate monthly payment for the amortizing portion (excluding balloon)
-		const amortizingAmount = principal - balloonPayment;
 		const monthlyPayment =
-			(amortizingAmount * monthlyRate) /
-			(1 - Math.pow(1 + monthlyRate, -term));
+			monthlyRate === 0
+				? amortizingAmount / term
+				: (amortizingAmount * monthlyRate) /
+				  (1 - Math.pow(1 + monthlyRate, -term));
 
-		let balance = principal;
+		let balance = amortizingAmount;
 		const scheduleArray = [];
 
-		// Add initial row (month 0)
+		// Initial month
 		scheduleArray.push({
 			month: '0',
 			payment: '-',
 			interest: '-',
 			principal: '-',
-			balance: `$${balance.toFixed(2)}`,
+			balance: `$${(balance + balloonPayment).toFixed(2)}`,
 		});
 
 		for (let i = 1; i <= term; i++) {
-			const interest = Math.round(balance * monthlyRate * 100) / 100;
-			let principalPaid;
-			let payment;
+			const fullBalance = balance + balloonPayment;
+			let interest = fullBalance * monthlyRate;
+			let principalPaid = monthlyPayment - interest;
 
-			// Regular months: standard amortization
-			principalPaid = Math.round((monthlyPayment - interest) * 100) / 100;
-			payment = Math.round(monthlyPayment * 100) / 100;
-			balance = Math.round((balance - principalPaid) * 100) / 100;
+			if (i === term) {
+				principalPaid = balance;
+				interest = fullBalance * monthlyRate; // still charge interest on full balance
+			}
+
+			balance -= principalPaid;
 
 			scheduleArray.push({
 				month: i.toString(),
-				payment: `$${payment.toFixed(2)}`,
+				payment: `$${(principalPaid + interest).toFixed(2)}`,
 				interest: `$${interest.toFixed(2)}`,
 				principal: `$${principalPaid.toFixed(2)}`,
-				balance: `$${balance.toFixed(2)}`,
+				balance: `$${(balance + balloonPayment).toFixed(2)}`,
 			});
 		}
 
-		// Add balloon payment as separate row
+		// Balloon payment if applicable
 		if (balloonPayment > 0) {
 			scheduleArray.push({
 				month: 'Balloon',
@@ -84,112 +118,288 @@ const AmortizationAnalysis = () => {
 		setSchedule(scheduleArray);
 	};
 
+	const renderScheduleCard = (item: any, index: number) => {
+		const isBalloon = item.month === 'Balloon';
+
+		return (
+			<View style={styles.itemCard}>
+				<View style={styles.monthContainer}>
+					{!!isBalloon ? (
+						<Image
+							source={Images.IC_BALLOON_PAYMENT}
+							style={styles.icon}
+						/>
+					) : (
+						<Text style={{ color: AppColors.white }}>
+							{item.month}
+						</Text>
+					)}
+				</View>
+				<View style={styles.rowContainer}>
+					<View>
+						<Text
+							style={{
+								fontWeight: '500',
+								color: AppColors.white,
+							}}
+						>
+							{`Payment: ${item.payment}`}
+						</Text>
+						<Text style={styles.subTextStyle}>
+							{`Interest Rate ${item.interest}`}
+						</Text>
+					</View>
+					<View>
+						<Text
+							style={{
+								fontWeight: '500',
+								color: AppColors.white,
+							}}
+						>
+							{`Principal: ${item.principal}`}
+						</Text>
+						<Text
+							style={[
+								styles.subTextStyle,
+								// { alignSelf: 'flex-end' },
+							]}
+						>
+							{`Balance: ${item.balance}`}
+						</Text>
+					</View>
+				</View>
+			</View>
+		);
+	};
+
+	const { loanAmount, interestRate, term, downPayment, balloonPayment } =
+		loanParams;
+
+	const infoItems = [
+		{
+			keyItem: 'Term',
+			value: `${term} months`,
+			imgSrc: Images.IC_CLOCk,
+		},
+		{
+			keyItem: 'Down Payment',
+			value: `$${parseFloatSafe(downPayment).toLocaleString()}`,
+			imgSrc: Images.IC_DOWN_PAYMENT,
+		},
+		{
+			keyItem: 'Balloon Payment',
+			value: `$${parseFloatSafe(balloonPayment).toLocaleString()}`,
+			imgSrc: Images.IC_BALLOON_PAYMENT,
+		},
+		{
+			keyItem: 'Interest Rate',
+			value: `${interestRate}%`,
+			imgSrc: Images.IC_INTEREST_RATE,
+		},
+	];
+	console.log('schedule', schedule);
 	return (
-		<View style={[styles.wrapper]}>
-			<Text style={styles.title}>Amortization Calculator</Text>
+		<View style={styles.container}>
+			<View style={styles.content}>
+				<View style={[styles.summaryCard]}>
+					<BlurView
+						style={StyleSheet.absoluteFill}
+						blurAmount={11}
+						blurType="light"
+						overlayColor={AppColors.placeholderTextColor}
+						reducedTransparencyFallbackColor="white"
+					/>
 
-			<TextInput
-				style={styles.input}
-				keyboardType="numeric"
-				placeholder="Loan Amount"
-				onChangeText={val =>
-					setLoanAmount(parseOrDefault(val, DEFAULTS.loanAmount))
-				}
-				defaultValue={DEFAULTS.loanAmount.toString()}
-			/>
-			<TextInput
-				style={styles.input}
-				keyboardType="numeric"
-				placeholder="Annual Interest Rate (%)"
-				onChangeText={val =>
-					setAnnualRate(parseOrDefault(val, DEFAULTS.annualRate))
-				}
-				defaultValue={DEFAULTS.annualRate.toString()}
-			/>
-			<TextInput
-				style={styles.input}
-				keyboardType="numeric"
-				placeholder="Term (months)"
-				onChangeText={val =>
-					setTerm(parseOrDefault(val, DEFAULTS.term))
-				}
-				defaultValue={DEFAULTS.term.toString()}
-			/>
-			<TextInput
-				style={styles.input}
-				keyboardType="numeric"
-				placeholder="Down Payment"
-				onChangeText={val =>
-					setDownPayment(parseOrDefault(val, DEFAULTS.downPayment))
-				}
-				defaultValue={DEFAULTS.downPayment.toString()}
-			/>
-			<TextInput
-				style={styles.input}
-				keyboardType="numeric"
-				placeholder="Balloon Payment"
-				onChangeText={val =>
-					setBalloonPayment(
-						parseOrDefault(val, DEFAULTS.balloonPayment),
-					)
-				}
-				defaultValue={DEFAULTS.balloonPayment.toString()}
-			/>
+					<View style={styles.headerRow}>
+						<View style={styles.headerLeft}>
+							<Image
+								source={Images.IC_SETTINGS}
+								style={styles.icon}
+							/>
+							<Text style={styles.headerText}>
+								Loan Parameters
+							</Text>
+						</View>
 
-			<Table
-				columns={[
-					{ label: 'Month', key: 'month' },
-					{ label: 'Payment', key: 'payment' },
-					{ label: 'Interest', key: 'interest' },
-					{ label: 'Principal', key: 'principal' },
-					{ label: 'Balance', key: 'balance' },
-				]}
-				data={schedule}
+						<TouchableOpacity
+							onPress={() => setShowInputModal(true)}
+						>
+							<View style={styles.editContainer}>
+								<Image
+									source={Images.IC_EDIT}
+									style={styles.icon}
+								/>
+							</View>
+						</TouchableOpacity>
+					</View>
+
+					<Text style={styles.loanAmountText}>Loan Amount</Text>
+					<Text style={styles.loanAmountValue}>
+						${parseFloatSafe(loanAmount).toLocaleString()}
+					</Text>
+					<View style={styles.keyValueContainer}>
+						{infoItems.map((item, index) => (
+							<KeyValueItem
+								key={index}
+								keyItem={item.keyItem}
+								value={item.value}
+								imgSrc={item.imgSrc}
+								imgStyle={{
+									marginBottom: MetricsSizes.small,
+									height: 15,
+									width: 15,
+									tintColor: AppColors.white,
+								}}
+							/>
+						))}
+					</View>
+				</View>
+
+				<View style={styles.scheduleSection}>
+					<Text style={styles.sectionTitle}>Payment Schedule</Text>
+					<FlatList
+						data={schedule}
+						keyExtractor={(item, index) => `${item.month}-${index}`}
+						renderItem={({ item, index }) =>
+							renderScheduleCard(item, index)
+						}
+						contentContainerStyle={styles.scheduleContainer}
+						showsVerticalScrollIndicator={false}
+					/>
+				</View>
+			</View>
+
+			<LoanParametersModal
+				visible={showInputModal}
+				onClose={() => setShowInputModal(false)}
+				defaultValues={loanParams}
+				onSave={(data: FormData) => {
+					setLoanParams(data);
+					setShowInputModal(false);
+				}}
 			/>
 		</View>
 	);
 };
 
 const styles = StyleSheet.create({
-	wrapper: {
+	headerRow: {
+		flexDirection: 'row',
+		marginBottom: MetricsSizes.small,
+		justifyContent: 'space-between',
+	},
+	headerLeft: {
+		flexDirection: 'row',
+		alignItems: 'center',
+	},
+	icon: {
+		height: 15,
+		width: 15,
+		tintColor: AppColors.white,
+	},
+	headerText: {
+		fontSize: 16,
+		color: AppColors.white,
+		marginHorizontal: MetricsSizes.small,
+	},
+	container: {
 		flex: 1,
+		// backgroundColor: '#f8fafc',
+		backgroundColor: AppColors.royalBlue,
+	},
+	content: {
+		flex: 1,
+		padding: 20,
+	},
+	summaryCard: {
+		// backgroundColor: '#ffffff',
+		// resultsContainer: {
 		padding: 16,
-		backgroundColor: '#F2F2F7',
-	},
-	title: {
-		fontSize: 22,
-		fontWeight: 'bold',
-		marginBottom: 16,
-		textAlign: 'center',
-	},
-	input: {
-		backgroundColor: '#fff',
-		padding: 12,
-		marginBottom: 10,
-		borderRadius: 6,
+		borderRadius: 20,
+		backgroundColor: AppColors.emraldGreen,
+		overflow: 'hidden',
+
+		// iOS & Android glow shadow
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 8 },
+		shadowOpacity: 0.1,
+		shadowRadius: 16,
+		elevation: 5, // Android shadow
+
+		// Optional: border for frosted edge
+		borderColor: 'rgba(255,255,255,0.2)',
 		borderWidth: 1,
-		borderColor: '#ccc',
 	},
-	tableHeader: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		backgroundColor: '#D1D5DB',
-		paddingVertical: 6,
-		paddingHorizontal: 4,
-		marginTop: 10,
-	},
-	tableRow: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		paddingVertical: 6,
-		paddingHorizontal: 4,
-		borderBottomWidth: 1,
-		borderColor: '#ccc',
-	},
-	cell: {
-		flex: 1,
-		fontSize: 12,
+	summaryValue: {
+		fontSize: FontSize.small,
 		textAlign: 'center',
+		color: AppColors.white,
+	},
+	scheduleSection: {
+		flex: 1,
+	},
+	sectionTitle: {
+		fontSize: 20,
+		fontWeight: 'bold',
+		color: AppColors.white,
+		marginVertical: 10,
+	},
+	scheduleContainer: {
+		gap: 12,
+	},
+	monthContainer: {
+		borderWidth: 1,
+		borderRadius: 9999,
+		width: 26,
+		height: 26,
+		alignItems: 'center',
+		justifyContent: 'center',
+		borderColor: AppColors.white,
+	},
+	rowContainer: {
+		flex: 1,
+		justifyContent: 'space-between',
+		marginLeft: MetricsSizes.regular,
+	},
+	subTextStyle: {
+		marginTop: MetricsSizes.tiny,
+		fontSize: FontSize.small,
+		color: 'grey',
+	},
+	itemCard: {
+		backgroundColor: AppColors.emraldGreen,
+		padding: MetricsSizes.regular,
+		borderRadius: 9,
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 1 },
+		shadowOpacity: 0.05,
+		shadowRadius: 2,
+		flexDirection: 'row',
+		alignItems: 'center',
+		elevation: 1,
+	},
+	loanAmountText: {
+		textAlign: 'center',
+		fontSize: FontSize.small,
+		color: AppColors.white,
+	},
+	loanAmountValue: {
+		textAlign: 'center',
+		fontSize: FontSize.extraLarge + FontSize.extraSmall,
+		fontWeight: 'semibold',
+		color: AppColors.white,
+	},
+	keyValueContainer: {
+		marginVertical: MetricsSizes.small,
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+	},
+	editContainer: {
+		borderWidth: 1,
+		borderRadius: 30,
+		borderColor: AppColors.white,
+		padding: MetricsSizes.small,
+		alignSelf: 'flex-end',
 	},
 });
 
