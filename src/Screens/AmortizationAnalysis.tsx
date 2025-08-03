@@ -101,7 +101,7 @@ const AmortizationAnalysis = () => {
 			payment: null,
 			interest: null,
 			principal: null,
-			balance: balance + balloonPayment,
+			balance: balance,
 		});
 
 		let totalInterest = 0;
@@ -176,7 +176,7 @@ const AmortizationAnalysis = () => {
 		}
 
 		const interestSaved = totalInterestOriginal - totalInterest;
-		const totalPaymentsOriginal = monthlyPayment * term;
+		const totalPaymentsOriginal = monthlyPayment * term + balloonPayment;
 
 		setInterestSaved(interestSaved ? interestSaved : '0.00');
 		setTotalInterestOriginal(totalInterestOriginal);
@@ -287,7 +287,7 @@ const AmortizationAnalysis = () => {
 			durationLabel += `${months} month${months > 1 ? 's' : ''}`;
 		}
 
-		return `${dateLabel} (${durationLabel})`;
+		return loanParams.balloonPayment > 0 ? `${dateLabel} (${durationLabel} + Balloon)` : `${dateLabel} (${durationLabel})`;
 	};
 
 	return (
@@ -379,9 +379,7 @@ const AmortizationAnalysis = () => {
 								{!!earlyPayOfMonth && (
 									<ResultCard
 										title={'New Payoff Date'}
-										value={getPayoffDateLabel(
-											earlyPayOfMonth,
-										)}
+										value={getPayoffDateLabel(earlyPayOfMonth)}
 										imgSrc={Images.IC_CONCENTRIC_CIRCLE}
 										valueStyle={styles.extraPaymentValue}
 										titleStyle={styles.extraPaymentTitle}
