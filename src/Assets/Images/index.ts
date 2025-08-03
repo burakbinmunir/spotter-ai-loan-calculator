@@ -10,4 +10,5 @@ export const Images = {
 	IC_PIE_CHART: require('./ic_pie_chart.png'),
 	IC_ARROW_ABOVE: require('./ic_arrow_above.png'),
 	IC_CONCENTRIC_CIRCLE: require('./ic_concentric_circle.png'),
+	IC_ARROW: require('./ic_arrow.png'),
 };

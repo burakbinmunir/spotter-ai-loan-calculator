@@ -32,6 +32,9 @@ export interface FormData {
 	term: string;
 	downPayment: string;
 	balloonPayment: string;
+	extraMonthlyPayment?: string;
+	oneTimePaymentAmount?: string;
+	oneTimePaymentMonth?: string;
 }
 
 const LoanParametersModal: React.FC<Props> = ({
@@ -64,6 +67,15 @@ const LoanParametersModal: React.FC<Props> = ({
 			balloonPayment:
 				parseFloat(data.balloonPayment) ||
 				AMORTIZATION_FALLBACKS.balloonPayment,
+			extraMonthlyPayment:
+				parseFloat(data.extraMonthlyPayment ?? '') ||
+				AMORTIZATION_FALLBACKS.extraMonthlyPayment,
+			oneTimePaymentAmount:
+				parseFloat(data.oneTimePaymentAmount ?? '') ||
+				AMORTIZATION_FALLBACKS.oneTimePaymentAmount,
+			oneTimePaymentMonth:
+				parseFloat(data.oneTimePaymentMonth ?? '') ||
+				AMORTIZATION_FALLBACKS.oneTimePaymentMonth,
 			customField: 'addedManually',
 		};
 
@@ -71,7 +83,7 @@ const LoanParametersModal: React.FC<Props> = ({
 	};
 
 	return (
-		<Modal visible={visible} transparent animationType="slide">
+		<Modal visible={visible} transparent animatiType="slide">
 			<View style={styles.overlay}>
 				<View style={styles.modal}>
 					<View style={styles.header}>
@@ -272,6 +284,54 @@ const LoanParametersModal: React.FC<Props> = ({
 									/>
 								)}
 							/>
+							<Controller
+								control={control}
+								name="extraMonthlyPayment"
+								render={({ field: { onChange, value } }) => (
+									<CustomTextInput
+										label="Extra Monthly Payment"
+										placeholder="$0"
+										keyboardType="numeric"
+										value={value ?? ''}
+										onChangeText={onChange}
+										imgSrc={Images.IC_DOLLAR}
+										imgStyles={styles.iconStyles}
+									/>
+								)}
+							/>
+
+							{/* One-Time Payment */}
+							<Controller
+								control={control}
+								name="oneTimePaymentAmount"
+								render={({ field: { onChange, value } }) => (
+									<CustomTextInput
+										label="One-Time Payment Amount"
+										placeholder="$0"
+										keyboardType="numeric"
+										value={value ?? ''}
+										onChangeText={onChange}
+										imgSrc={Images.IC_DOLLAR}
+										imgStyles={styles.iconStyles}
+									/>
+								)}
+							/>
+
+							<Controller
+								control={control}
+								name="oneTimePaymentMonth"
+								render={({ field: { onChange, value } }) => (
+									<CustomTextInput
+										label="One-Time Payment Month"
+										placeholder="e.g., 1"
+										keyboardType="numeric"
+										value={value ?? ''}
+										onChangeText={onChange}
+										imgSrc={Images.IC_CONCENTRIC_CIRCLE}
+										imgStyles={styles.iconStyles}
+									/>
+								)}
+							/>
 						</View>
 					</ScrollView>
 
@@ -369,6 +429,7 @@ const styles = StyleSheet.create({
 		height: 20,
 		width: 20,
 		tintColor: AppColors.white,
+		marginRight: MetricsSizes.small,
 	},
 	arrowIconStyle: {
 		height: 15,

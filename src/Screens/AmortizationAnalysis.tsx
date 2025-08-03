@@ -9,12 +9,19 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native';
-import { AMORTIZATION_FALLBACKS, AppColors, FontSize, MetricsSizes } from '../Helpers/Variables';
+import { format, addMonths } from 'date-fns';
+import {
+	AMORTIZATION_FALLBACKS,
+	AppColors,
+	FontSize,
+	MetricsSizes,
+} from '../Helpers/Variables';
 import { BlurView } from '@react-native-community/blur';
 import LoanParametersModal, {
 	FormData,
 } from '../Components/LoanParametersModal';
 import { Images } from '../Assets/Images';
+import ResultCard from '../Components/ResultCard.tsx';
 
 interface KeyValueItemProps {
 	keyItem: string;
@@ -39,23 +46,62 @@ const KeyValueItem = ({ imgSrc, value, imgStyle }: KeyValueItemProps) => {
 const AmortizationAnalysis = () => {
 	const [schedule, setSchedule] = useState<any[]>([]);
 	const [showInputModal, setShowInputModal] = useState(false);
+	const [earlyPayOfMonth, setEarlyPayoffMonth] = useState();
+	const [interestSaved, setInterestSaved] = useState();
+	const [totalInterestOriginal, setTotalInterestOriginal] = useState('');
+	const [totalPaymentsOriginal, setTotalPaymentsOriginal] = useState('');
+
+	const [showExtraPaymentOptions, setShowExtraPaymentOptions] =
+		useState(false);
+	const [showLoanSummary, setShowLoanSummary] = useState(false);
+
 	const [loanParams, setLoanParams] = useState<FormData>({
-		loanAmount: '175000',
-		interestRate: '11.9',
-		term: '60',
-		downPayment: '0',
-		balloonPayment: '0',
+		loanAmount: AMORTIZATION_FALLBACKS.loanAmount,
+		interestRate: AMORTIZATION_FALLBACKS.interestRate,
+		term: AMORTIZATION_FALLBACKS.loanTerm,
+		downPayment: AMORTIZATION_FALLBACKS.downPayment,
+		balloonPayment: AMORTIZATION_FALLBACKS.balloonPayment,
+		extraMonthlyPayment: AMORTIZATION_FALLBACKS.extraMonthlyPayment,
+		oneTimePaymentAmount: AMORTIZATION_FALLBACKS.oneTimePaymentAmount,
+		oneTimePaymentMonth: AMORTIZATION_FALLBACKS.oneTimePaymentMonth,
 	});
 
-	const parseFloatSafe = (val: string, fallback = 0) =>
+	const parseFloatSafe = (val: string, fallback: string) =>
 		isNaN(parseFloat(val)) ? fallback : parseFloat(val);
 
 	const generateSchedule = useCallback(() => {
-		const loanAmount = parseFloatSafe(loanParams.loanAmount || AMORTIZATION_FALLBACKS.loanAmount);
-		const annualRate = parseFloatSafe(loanParams.interestRate || AMORTIZATION_FALLBACKS.interestRate);
-		const term = parseFloatSafe(loanParams.term || AMORTIZATION_FALLBACKS.loanTerm);
-		const downPayment = parseFloatSafe(loanParams.downPayment || AMORTIZATION_FALLBACKS.downPayment);
-		const balloonPayment = parseFloatSafe(loanParams.balloonPayment || AMORTIZATION_FALLBACKS.balloonPayment);
+		const loanAmount = parseFloatSafe(
+			loanParams.loanAmount,
+			AMORTIZATION_FALLBACKS.loanAmount,
+		);
+		const annualRate = parseFloatSafe(
+			loanParams.interestRate,
+			AMORTIZATION_FALLBACKS.interestRate,
+		);
+		const term = parseFloatSafe(
+			loanParams.term,
+			AMORTIZATION_FALLBACKS.loanTerm,
+		);
+		const downPayment = parseFloatSafe(
+			loanParams.downPayment,
+			AMORTIZATION_FALLBACKS.downPayment,
+		);
+		const balloonPayment = parseFloatSafe(
+			loanParams.balloonPayment,
+			AMORTIZATION_FALLBACKS.balloonPayment,
+		);
+		const extraMonthlyPayment = parseFloatSafe(
+			loanParams.extraMonthlyPayment,
+			AMORTIZATION_FALLBACKS.extraMonthlyPayment,
+		);
+		const oneTimePaymentAmount = parseFloatSafe(
+			loanParams.oneTimePaymentAmount,
+			AMORTIZATION_FALLBACKS.oneTimePaymentAmount,
+		);
+		const oneTimePaymentMonth = parseInt(
+			loanParams.oneTimePaymentMonth ??
+			AMORTIZATION_FALLBACKS.oneTimePaymentMonth,
+		);
 
 		const principal = loanAmount - downPayment;
 		const monthlyRate = annualRate / 100 / 12;
@@ -65,12 +111,11 @@ const AmortizationAnalysis = () => {
 			monthlyRate === 0
 				? amortizingAmount / term
 				: (amortizingAmount * monthlyRate) /
-				  (1 - Math.pow(1 + monthlyRate, -term));
+				(1 - Math.pow(1 + monthlyRate, -term));
 
 		let balance = amortizingAmount;
 		const scheduleArray = [];
 
-		// Initial month
 		scheduleArray.push({
 			month: '0',
 			payment: '-',
@@ -79,29 +124,47 @@ const AmortizationAnalysis = () => {
 			balance: `$${(balance + balloonPayment).toFixed(2)}`,
 		});
 
+		let totalInterest = 0;
+		let payoffMonth = 0;
+
 		for (let i = 1; i <= term; i++) {
 			const fullBalance = balance + balloonPayment;
 			let interest = fullBalance * monthlyRate;
 			let principalPaid = monthlyPayment - interest;
 
-			if (i === term) {
-				principalPaid = balance;
-				interest = fullBalance * monthlyRate; // still charge interest on full balance
+			// Apply extra and one-time payments
+			principalPaid += extraMonthlyPayment;
+			if (i === oneTimePaymentMonth) {
+				principalPaid += oneTimePaymentAmount;
 			}
+
+			// Avoid overpaying
+			if (principalPaid > balance) {
+				principalPaid = balance;
+				interest = fullBalance * monthlyRate;
+			}
+
+			const payment = principalPaid + interest;
+			totalInterest += interest;
 
 			balance -= principalPaid;
 
 			scheduleArray.push({
 				month: i.toString(),
-				payment: `$${(principalPaid + interest).toFixed(2)}`,
+				payment: `$${payment.toFixed(2)}`,
 				interest: `$${interest.toFixed(2)}`,
 				principal: `$${principalPaid.toFixed(2)}`,
-				balance: `$${(balance + balloonPayment).toFixed(2)}`,
+				balance: `$${Math.max(0, balance + balloonPayment).toFixed(2)}`,
 			});
+
+			if (balance <= 0) {
+				payoffMonth = i;
+				break;
+			}
 		}
 
-		// Balloon payment if applicable
-		if (balloonPayment > 0) {
+		// Handle balloon
+		if (balance > 0 && balloonPayment > 0) {
 			scheduleArray.push({
 				month: 'Balloon',
 				payment: `$${balloonPayment.toFixed(2)}`,
@@ -109,16 +172,44 @@ const AmortizationAnalysis = () => {
 				principal: `$${balloonPayment.toFixed(2)}`,
 				balance: '$0.00',
 			});
+			payoffMonth = term;
 		}
 
 		setSchedule(scheduleArray);
-	},[loanParams]);
+		setEarlyPayoffMonth(payoffMonth);
+
+		// ========== Original Total Interest Calculation (no extra/one-time payments) ==========
+		let balanceOriginal = amortizingAmount;
+		let totalInterestOriginal = 0;
+
+		for (let i = 1; i <= term; i++) {
+			const fullBalance = balanceOriginal + balloonPayment;
+			const interestOriginal = fullBalance * monthlyRate;
+			let principalOriginal = monthlyPayment - interestOriginal;
+
+			if (i === term) {
+				principalOriginal = balanceOriginal;
+			}
+
+			balanceOriginal -= principalOriginal;
+			totalInterestOriginal += interestOriginal;
+			if (balanceOriginal <= 0) break;
+		}
+
+		// ========== Set Results ==========
+		const interestSaved = (totalInterestOriginal - totalInterest).toFixed(2);
+		const totalPaymentsOriginal = (monthlyPayment * term).toFixed(2);
+		console.log("totalInterest",totalInterest)
+		setInterestSaved(interestSaved);
+		setTotalInterestOriginal(totalInterestOriginal.toFixed(2));
+		setTotalPaymentsOriginal(totalPaymentsOriginal);
+	}, [loanParams]);
+
+
 
 	useEffect(() => {
 		generateSchedule();
 	}, [generateSchedule]);
-
-
 
 	const renderScheduleCard = (item: any) => {
 		const isBalloon = item.month === 'Balloon';
@@ -153,17 +244,10 @@ const AmortizationAnalysis = () => {
 						</Text>
 					</View>
 					<View>
-						<Text
-							style={styles.subTextStyle}
-
-						>
+						<Text style={styles.subTextStyle}>
 							{`Principal: ${item.principal}`}
 						</Text>
-						<Text
-							style={[
-								styles.subTextStyle,
-							]}
-						>
+						<Text style={[styles.subTextStyle]}>
 							{`Balance: ${item.balance}`}
 						</Text>
 					</View>
@@ -172,7 +256,7 @@ const AmortizationAnalysis = () => {
 		);
 	};
 
-	const { loanAmount , interestRate, term, downPayment, balloonPayment } =
+	const { loanAmount, interestRate, term, downPayment, balloonPayment } =
 		loanParams;
 
 	const infoItems = [
@@ -182,7 +266,8 @@ const AmortizationAnalysis = () => {
 			imgSrc: Images.IC_DOLLAR,
 			imgHeight: 15,
 			imgWidth: 15,
-		},{
+		},
+		{
 			keyItem: 'Term',
 			value: `${term} months`,
 			imgSrc: Images.IC_CONCENTRIC_CIRCLE,
@@ -204,8 +289,15 @@ const AmortizationAnalysis = () => {
 			imgHeight: 15,
 			imgWidth: 15,
 		},
-
 	];
+
+	const getPayoffDateLabel = (monthsToAdd: number) => {
+		if (!monthsToAdd || monthsToAdd <= 0) return 'N/A';
+		const now = new Date();
+		const payoffDate = addMonths(now, monthsToAdd);
+		const label = format(payoffDate, 'MMM, yyyy');
+		return `${label} (${monthsToAdd} mos)`;
+	};
 
 	return (
 		<View style={styles.container}>
@@ -261,6 +353,119 @@ const AmortizationAnalysis = () => {
 							/>
 						))}
 					</View>
+					<View style={{ marginTop: 16 }}>
+						<TouchableOpacity onPress={() => setShowExtraPaymentOptions(prev => !prev)} style={styles.accordianContainer}>
+							<View style={styles.accordianSubContainer}>
+								<Image
+									source={Images.IC_ARROW_ABOVE}
+									style={styles.accordianImgStyle}
+								/>
+								<Text style={styles.loanSummaryText}>
+									Extra Payment Options
+								</Text>
+							</View>
+							<Image
+								source={Images.IC_ARROW}
+								style={[
+									styles.accordianArrowStyle,
+									{
+										transform: [
+											{
+												rotate: showExtraPaymentOptions
+													? '180deg'
+													: '0deg',
+											},
+										],
+									},
+								]}
+							/>
+						</TouchableOpacity>
+
+						{showExtraPaymentOptions && (
+							<View style={{ paddingVertical: 12 }}>
+								{!!earlyPayOfMonth && (
+									<ResultCard
+										title={'New Payoff Date'}
+										value={getPayoffDateLabel(
+											earlyPayOfMonth,
+										)}
+										imgSrc={Images.IC_CONCENTRIC_CIRCLE}
+										valueStyle={styles.extraPaymentValue}
+										titleStyle={styles.extraPaymentTitle}
+										contentContainerStyle={styles.extraPaymentContainer}
+									/>
+								)}
+
+								{!!interestSaved && (
+									<ResultCard
+										title={'Interest Saved'}
+										value={`$${interestSaved}`}
+										imgSrc={Images.IC_ARROW_ABOVE}
+										valueStyle={styles.extraPaymentValue}
+										titleStyle={styles.extraPaymentTitle}
+										contentContainerStyle={styles.extraPaymentContainer}
+									/>
+								)}
+							</View>
+						)}
+					</View>
+					<View style={{ marginTop: 16 }}>
+						<TouchableOpacity
+							onPress={() => setShowLoanSummary(prev => !prev)}
+							style={styles.accordianContainer}
+						>
+							<View style={styles.accordianSubContainer}>
+								<Image
+									source={Images.IC_PIE_CHART}
+									style={styles.accordianImgStyle}
+								/>
+								<Text style={styles.loanSummaryText}>
+									Loan Summary
+								</Text>
+							</View>
+							<Image
+								source={Images.IC_ARROW}
+								style={[
+									styles.accordianArrowStyle,
+									{
+										transform: [
+											{
+												rotate: showLoanSummary
+													? '180deg'
+													: '0deg',
+											},
+										],
+									},
+								]}
+							/>
+						</TouchableOpacity>
+
+						{showLoanSummary && (
+							<View style={{ paddingVertical: 12 }}>
+								{!!totalPaymentsOriginal && (
+									<ResultCard
+										title={'Original Total Payments'}
+										value={`$${totalPaymentsOriginal}`}
+										valueStyle={styles.loanSummaryValue}
+										contentContainerStyle={
+											styles.loanSummaryContainer
+										}
+									/>
+								)}
+
+								{!!interestSaved && (
+									<ResultCard
+										title={'Original Total Interest'}
+										value={`$${totalInterestOriginal}`}
+										valueStyle={styles.loanSummaryValue}
+										contentContainerStyle={
+											styles.loanSummaryContainer
+										}
+									/>
+								)}
+							</View>
+						)}
+					</View>
 				</View>
 
 				<View style={styles.scheduleSection}>
@@ -301,7 +506,7 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 	},
-	editIcon:{
+	editIcon: {
 		height: 15,
 		width: 15,
 		tintColor: AppColors.white,
@@ -410,6 +615,56 @@ const styles = StyleSheet.create({
 		// padding: MetricsSizes.small - 1,
 		alignSelf: 'flex-end',
 	},
+	loanSummaryValue: {
+		color: AppColors.aquaColor,
+		fontSize: FontSize.extraLarge,
+		textAlign: 'center',
+	},
+	loanSummaryContainer: {
+		borderWidth: 1,
+		borderColor: AppColors.aquaColor,
+		backgroundColor: AppColors.fadedLightAquaColor,
+	},
+	accordianArrowStyle: {
+		height: 15,
+		width: 15,
+		tintColor: AppColors.aquaColor,
+	},
+	loanSummaryText: {
+		fontSize: FontSize.regular,
+		fontWeight: '600',
+		color: AppColors.white,
+	},
+	accordianImgStyle: {
+		tintColor: AppColors.aquaColor,
+		height: 15,
+		width: 15,
+		marginRight: MetricsSizes.small,
+	},
+	accordianSubContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+	},
+	accordianContainer: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		backgroundColor: AppColors.royalBlue,
+		padding: 12,
+		borderRadius: 10,
+	},
+	extraPaymentValue: {
+		fontSize: FontSize.large,
+	},
+	extraPaymentTitle: {
+		fontSize: FontSize.small,
+		fontWeight: 'normal',
+	},
+	extraPaymentContainer: {
+		alignItems: 'flex-start',
+		backgroundColor:
+		AppColors.aquaColor,
+	}
 });
 
 export default AmortizationAnalysis;

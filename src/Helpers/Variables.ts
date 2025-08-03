@@ -32,6 +32,8 @@ export const MetricsSizes = {
 export const AppColors = {
 	royalBlue: "#051830",
 	aquaColor: "#62e1d5",
+	lightAquaColor: "#86e8e1",
+	fadedLightAquaColor: "rgba(25,113,108,0.18)",
 	white: "#ffffff",
 	greyishWhite: "#CBD5E1",
 	placeholderTextColor: 'rgba(55,62,80,0.62)',
@@ -67,6 +69,10 @@ export const AMORTIZATION_FALLBACKS = {
 	loanTerm: '60',
 	downPayment: '0',
 	balloonPayment: '0',
+	extraMonthlyPayment: '0',
+	oneTimePaymentAmount: '0',
+	oneTimePaymentMonth: '1',
+
 }
 
 export const TAB_IMAGES = {
