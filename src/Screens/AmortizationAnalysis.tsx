@@ -295,8 +295,19 @@ const AmortizationAnalysis = () => {
 		if (!monthsToAdd || monthsToAdd <= 0) return 'N/A';
 		const now = new Date();
 		const payoffDate = addMonths(now, monthsToAdd);
-		const label = format(payoffDate, 'MMM, yyyy');
-		return `${label} (${monthsToAdd} mos)`;
+		const dateLabel = format(payoffDate, 'dd MMM, yyyy');
+
+		const years = Math.floor(monthsToAdd / 12);
+		const months = monthsToAdd % 12;
+
+		let durationLabel = '';
+		if (years > 0) durationLabel += `${years} year${years > 1 ? 's' : ''}`;
+		if (months > 0) {
+			if (durationLabel) durationLabel += ' ';
+			durationLabel += `${months} month${months > 1 ? 's' : ''}`;
+		}
+
+		return `${dateLabel} (${durationLabel})`;
 	};
 
 	return (
