@@ -97,10 +97,10 @@ const AffordabilityAnalysis = () => {
 				type: 'manual',
 				message: 'Enter a valid number',
 			});
-		} else if (isNaN(r) || r <= 0) {
+		} else if (isNaN(r) || r < 0) {
 			setError('interestRate', {
 				type: 'manual',
-				message: 'Value must be at least 0.01',
+				message: 'Value must be at least 0.',
 			});
 		} else {
 			clearErrors('interestRate');
