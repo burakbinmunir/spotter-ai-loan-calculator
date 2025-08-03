@@ -24,6 +24,8 @@ import { Images } from '../Assets/Images';
 import ResultCard from '../Components/ResultCard.tsx';
 import KeyValueItem from '../Components/KeyVaueItem.tsx';
 
+const formatCurrency = (val) => val ? `$${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "-";
+
 
 const AmortizationAnalysis = () => {
 	const [schedule, setSchedule] = useState<any[]>([]);
@@ -100,10 +102,10 @@ const AmortizationAnalysis = () => {
 
 		scheduleArray.push({
 			month: '0',
-			payment: '-',
-			interest: '-',
-			principal: '-',
-			balance: `$${(balance + balloonPayment).toFixed(2)}`,
+			payment: null,
+			interest: null,
+			principal: null,
+			balance: balance + balloonPayment,
 		});
 
 		let totalInterest = 0;
@@ -133,10 +135,10 @@ const AmortizationAnalysis = () => {
 
 			scheduleArray.push({
 				month: i.toString(),
-				payment: `$${payment.toFixed(2)}`,
-				interest: `$${interest.toFixed(2)}`,
-				principal: `$${principalPaid.toFixed(2)}`,
-				balance: `$${Math.max(0, balance + balloonPayment).toFixed(2)}`,
+				payment: payment,
+				interest: interest,
+				principal: principalPaid,
+				balance: Math.max(0, balance + balloonPayment),
 			});
 
 			if (balance <= 0) {
@@ -149,10 +151,10 @@ const AmortizationAnalysis = () => {
 		if (balance > 0 && balloonPayment > 0) {
 			scheduleArray.push({
 				month: 'Balloon',
-				payment: `$${balloonPayment.toFixed(2)}`,
-				interest: '$0.00',
-				principal: `$${balloonPayment.toFixed(2)}`,
-				balance: '$0.00',
+				payment: balloonPayment,
+				interest: 0,
+				principal: balloonPayment,
+				balance: 0,
 			});
 			payoffMonth = term;
 		}
@@ -160,7 +162,7 @@ const AmortizationAnalysis = () => {
 		setSchedule(scheduleArray);
 		setEarlyPayoffMonth(payoffMonth);
 
-		// ========== Original Total Interest Calculation (no extra/one-time payments) ==========
+		// ========== Original Total Interest Calculation ==========
 		let balanceOriginal = amortizingAmount;
 		let totalInterestOriginal = 0;
 
@@ -175,15 +177,15 @@ const AmortizationAnalysis = () => {
 
 			balanceOriginal -= principalOriginal;
 			totalInterestOriginal += interestOriginal;
+
 			if (balanceOriginal <= 0) break;
 		}
 
-		// ========== Set Results ==========
-		const interestSaved = (totalInterestOriginal - totalInterest).toFixed(2);
-		const totalPaymentsOriginal = (monthlyPayment * term).toFixed(2);
-		console.log("totalInterest",totalInterest)
-		setInterestSaved(interestSaved);
-		setTotalInterestOriginal(totalInterestOriginal.toFixed(2));
+		const interestSaved = totalInterestOriginal - totalInterest;
+		const totalPaymentsOriginal = monthlyPayment * term;
+
+		setInterestSaved(interestSaved ? interestSaved :"0.00");
+		setTotalInterestOriginal(totalInterestOriginal);
 		setTotalPaymentsOriginal(totalPaymentsOriginal);
 	}, [loanParams]);
 
@@ -212,25 +214,19 @@ const AmortizationAnalysis = () => {
 				</View>
 				<View style={styles.rowContainer}>
 					<View>
-						<Text
-							style={{
-								fontWeight: '500',
-								color: AppColors.white,
-								fontSize: FontSize.large,
-							}}
-						>
-							{`${item.payment}`}
+						<Text style={styles.balanceText}>
+							{isBalloon ? "$0.00" : `${formatCurrency(item?.balance)}`}
 						</Text>
 						<Text style={styles.subTextStyle}>
-							{`Interest Rate ${item.interest}`}
+							{`Payment: ${formatCurrency(item?.payment)}`}
 						</Text>
 					</View>
 					<View>
 						<Text style={styles.subTextStyle}>
-							{`Principal: ${item.principal}`}
+							{`Interest Rate: ${formatCurrency(item?.interest)}`}
 						</Text>
 						<Text style={[styles.subTextStyle]}>
-							{`Balance: ${item.balance}`}
+							{`Principal: ${formatCurrency(item?.principal)}`}
 						</Text>
 					</View>
 				</View>
@@ -389,16 +385,16 @@ const AmortizationAnalysis = () => {
 									/>
 								)}
 
-								{!!interestSaved && (
+								{!!interestSaved &&
 									<ResultCard
 										title={'Interest Saved'}
-										value={`$${interestSaved}`}
+										value={formatCurrency(interestSaved)}
 										imgSrc={Images.IC_ARROW_ABOVE}
 										valueStyle={styles.extraPaymentValue}
 										titleStyle={styles.extraPaymentTitle}
 										contentContainerStyle={styles.extraPaymentContainer}
 									/>
-								)}
+								}
 							</View>
 						)}
 					</View>
@@ -438,7 +434,7 @@ const AmortizationAnalysis = () => {
 								{!!totalPaymentsOriginal && (
 									<ResultCard
 										title={'Original Total Payments'}
-										value={`$${totalPaymentsOriginal}`}
+										value={formatCurrency(totalPaymentsOriginal)}
 										valueStyle={styles.loanSummaryValue}
 										contentContainerStyle={
 											styles.loanSummaryContainer
@@ -446,10 +442,10 @@ const AmortizationAnalysis = () => {
 									/>
 								)}
 
-								{!!interestSaved && (
+								{!!totalInterestOriginal && (
 									<ResultCard
 										title={'Original Total Interest'}
-										value={`$${totalInterestOriginal}`}
+										value={formatCurrency(totalInterestOriginal)}
 										valueStyle={styles.loanSummaryValue}
 										contentContainerStyle={
 											styles.loanSummaryContainer
@@ -480,7 +476,6 @@ const AmortizationAnalysis = () => {
 				onClose={() => setShowInputModal(false)}
 				defaultValues={loanParams}
 				onSave={(data: FormData) => {
-					console.log('data', data);
 					setLoanParams(data);
 					setShowInputModal(false);
 				}}
@@ -652,6 +647,11 @@ const styles = StyleSheet.create({
 		alignItems: 'flex-start',
 		backgroundColor:
 		AppColors.aquaColor,
+	},
+	balanceText: {
+		fontWeight: '500',
+		color: AppColors.white,
+		fontSize: FontSize.large,
 	}
 });
 
