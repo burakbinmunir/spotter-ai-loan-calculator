@@ -9,16 +9,20 @@ import {
 	Text,
 	View,
 } from 'react-native';
-import { AFFORDABILITY_FALLBACKS, AppColors, MetricsSizes } from '../Helpers/Variables.ts';
+import {
+	AFFORDABILITY_FALLBACKS,
+	AppColors,
+	MetricsSizes,
+} from '../Helpers/Variables.ts';
 import CustomTextInput from '../Components/CustomTextInput.tsx';
 import { Controller, useForm } from 'react-hook-form';
 import ResultCard from '../Components/ResultCard.tsx';
-import { BlurView } from '@react-native-community/blur';
+import { GenericHelper } from '../Helpers/GenericHelper.ts';
 import { Images } from '../Assets/Images/index.ts';
 
 const AffordabilityAnalysis = () => {
-	const [maxLoanAmount, setMaxLoanAmount] = useState('');
-	const [purchasePrice, setPurchasePrice] = useState('');
+	const [maxLoanAmount, setMaxLoanAmount] = useState<number>();
+	const [purchasePrice, setPurchasePrice] = useState<number>();
 	const {
 		control,
 		formState: { errors },
@@ -54,8 +58,8 @@ const AffordabilityAnalysis = () => {
 		const loanAmount = (P * (1 - Math.pow(1 + r, -n))) / r;
 		const total = loanAmount + down;
 
-		setMaxLoanAmount(`$${loanAmount.toFixed(2)}`);
-		setPurchasePrice(`$${total.toFixed(2)}`);
+		setMaxLoanAmount(loanAmount);
+		setPurchasePrice(total);
 	}, [desiredPayment, interestRate, loanTerm, downPayment]);
 
 	useEffect(() => {
@@ -162,14 +166,15 @@ const AffordabilityAnalysis = () => {
 					showsVerticalScrollIndicator={false}
 				>
 					{maxLoanAmount !== '' && (
-						<View style={styles.blurContainer}>
-							<BlurView
-								style={StyleSheet.absoluteFill}
-								blurAmount={11}
-								blurType="light"
-								overlayColor={AppColors.placeholderTextColor}
-								reducedTransparencyFallbackColor="white"
-							/>
+						<View
+							style={[
+								styles.blurContainer,
+								{
+									backgroundColor:
+										AppColors.placeholderTextColor,
+								},
+							]}
+						>
 							<View style={styles.resultsGrid}>
 								<ResultCard
 									titleIcon={Images.IC_DOLLAR}
@@ -181,7 +186,9 @@ const AffordabilityAnalysis = () => {
 									value={
 										Object.keys(errors)?.length > 0
 											? '$0.00'
-											: maxLoanAmount
+											: GenericHelper.formatCurrency(
+													maxLoanAmount,
+											  )
 									}
 								/>
 								<ResultCard
@@ -194,7 +201,9 @@ const AffordabilityAnalysis = () => {
 									value={
 										Object.keys(errors)?.length > 0
 											? '$0.00'
-											: purchasePrice
+											: GenericHelper.formatCurrency(
+													purchasePrice,
+											  )
 									}
 									contentContainerStyle={{
 										backgroundColor: AppColors.aquaColor,
@@ -203,17 +212,18 @@ const AffordabilityAnalysis = () => {
 							</View>
 						</View>
 					)}
-					<View style={styles.loanBlurContainer}>
-						<BlurView
-							style={StyleSheet.absoluteFill}
-							blurAmount={10}
-							blurType="light"
-							overlayColor={AppColors.placeholderTextColor}
-							reducedTransparencyFallbackColor="white"
-						/>
+					<View
+						style={[
+							styles.loanBlurContainer,
+							{ backgroundColor: AppColors.placeholderTextColor },
+						]}
+					>
 						<View>
 							<View style={styles.header}>
-								<Image source={Images.IC_SETTINGS} style={styles.settingImg} />
+								<Image
+									source={Images.IC_SETTINGS}
+									style={styles.settingImg}
+								/>
 								<Text style={styles.sectionTitle}>
 									Loan Parameters
 								</Text>
@@ -328,7 +338,7 @@ const styles = StyleSheet.create({
 	},
 	header: {
 		flexDirection: 'row',
-		alignItems: 'center'
+		alignItems: 'center',
 	},
 	settingImg: {
 		height: 18,
@@ -340,14 +350,13 @@ const styles = StyleSheet.create({
 		tintColor: AppColors.aquaColor,
 		height: 15,
 		width: 15,
-		marginRight: MetricsSizes.small
+		marginRight: MetricsSizes.small,
 	},
 	starIconStyle: {
 		height: 15,
 		width: 15,
 		marginRight: MetricsSizes.small,
-
-	}
+	},
 });
 
 export default AffordabilityAnalysis;

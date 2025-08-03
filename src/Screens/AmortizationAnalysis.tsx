@@ -2,35 +2,25 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
 	FlatList,
 	Image,
-	ImageProps,
-	ImageSourcePropType,
 	StyleSheet,
 	Text,
 	TouchableOpacity,
 	View,
 } from 'react-native';
-import { format, addMonths } from 'date-fns';
+import { addMonths, format } from 'date-fns';
 import {
 	AMORTIZATION_FALLBACKS,
 	AppColors,
 	FontSize,
 	MetricsSizes,
 } from '../Helpers/Variables';
-import { BlurView } from '@react-native-community/blur';
+import { GenericHelper } from '../Helpers/GenericHelper.ts';
 import LoanParametersModal, {
 	FormData,
 } from '../Components/LoanParametersModal';
 import { Images } from '../Assets/Images';
 import ResultCard from '../Components/ResultCard.tsx';
 import KeyValueItem from '../Components/KeyVaueItem.tsx';
-
-const formatCurrency = val =>
-	val
-		? `$${val.toLocaleString(undefined, {
-				minimumFractionDigits: 2,
-				maximumFractionDigits: 2,
-		  })}`
-		: '-';
 
 const AmortizationAnalysis = () => {
 	const [schedule, setSchedule] = useState<any[]>([]);
@@ -89,7 +79,7 @@ const AmortizationAnalysis = () => {
 		);
 		const oneTimePaymentMonth = parseInt(
 			loanParams.oneTimePaymentMonth ??
-			AMORTIZATION_FALLBACKS.oneTimePaymentMonth
+				AMORTIZATION_FALLBACKS.oneTimePaymentMonth,
 		);
 
 		const principal = loanAmount - downPayment;
@@ -100,8 +90,8 @@ const AmortizationAnalysis = () => {
 		const monthlyPayment =
 			monthlyRate === 0
 				? (amortizingAmount - balloonPayment) / term
-				: (amortizingAmount - pvBalloon) * monthlyRate /
-				(1 - Math.pow(1 + monthlyRate, -term));
+				: ((amortizingAmount - pvBalloon) * monthlyRate) /
+				  (1 - Math.pow(1 + monthlyRate, -term));
 
 		let balance = amortizingAmount;
 		const scheduleArray = [];
@@ -219,18 +209,26 @@ const AmortizationAnalysis = () => {
 						<Text style={styles.balanceText}>
 							{isBalloon
 								? '$0.00'
-								: `${formatCurrency(item?.balance)}`}
+								: `${GenericHelper.formatCurrency(
+										item?.balance,
+								  )}`}
 						</Text>
 						<Text style={styles.subTextStyle}>
-							{`Payment: ${formatCurrency(item?.payment)}`}
+							{`Payment: ${GenericHelper.formatCurrency(
+								item?.payment,
+							)}`}
 						</Text>
 					</View>
 					<View>
 						<Text style={styles.subTextStyle}>
-							{`Interest Rate: ${formatCurrency(item?.interest)}`}
+							{`Interest Rate: ${GenericHelper.formatCurrency(
+								item?.interest,
+							)}`}
 						</Text>
 						<Text style={[styles.subTextStyle]}>
-							{`Principal: ${formatCurrency(item?.principal)}`}
+							{`Principal: ${GenericHelper.formatCurrency(
+								item?.principal,
+							)}`}
 						</Text>
 					</View>
 				</View>
@@ -295,15 +293,12 @@ const AmortizationAnalysis = () => {
 	return (
 		<View style={styles.container}>
 			<View style={styles.content}>
-				<View style={[styles.summaryCard]}>
-					<BlurView
-						style={StyleSheet.absoluteFill}
-						blurAmount={11}
-						blurType="light"
-						overlayColor={AppColors.placeholderTextColor}
-						reducedTransparencyFallbackColor="white"
-					/>
-
+				<View
+					style={[
+						styles.summaryCard,
+						{ backgroundColor: AppColors.placeholderTextColor },
+					]}
+				>
 					<View style={styles.headerRow}>
 						<View style={styles.headerLeft}>
 							<Image
@@ -399,7 +394,9 @@ const AmortizationAnalysis = () => {
 								{!!interestSaved && (
 									<ResultCard
 										title={'Interest Saved'}
-										value={formatCurrency(interestSaved)}
+										value={GenericHelper.formatCurrency(
+											interestSaved,
+										)}
 										imgSrc={Images.IC_ARROW_ABOVE}
 										valueStyle={styles.extraPaymentValue}
 										titleStyle={styles.extraPaymentTitle}
@@ -447,7 +444,7 @@ const AmortizationAnalysis = () => {
 								{!!totalPaymentsOriginal && (
 									<ResultCard
 										title={'Original Total Payments'}
-										value={formatCurrency(
+										value={GenericHelper.formatCurrency(
 											totalPaymentsOriginal,
 										)}
 										valueStyle={styles.loanSummaryValue}
@@ -460,7 +457,7 @@ const AmortizationAnalysis = () => {
 								{!!totalInterestOriginal && (
 									<ResultCard
 										title={'Original Total Interest'}
-										value={formatCurrency(
+										value={GenericHelper.formatCurrency(
 											totalInterestOriginal,
 										)}
 										valueStyle={styles.loanSummaryValue}

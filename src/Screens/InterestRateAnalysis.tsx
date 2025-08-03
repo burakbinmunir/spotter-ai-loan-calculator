@@ -15,7 +15,6 @@ import {
 } from '../Helpers/Variables.ts';
 import ResultCard from '../Components/ResultCard.tsx';
 import CustomTextInput from '../Components/CustomTextInput.tsx';
-import { BlurView } from '@react-native-community/blur';
 import { Images } from '../Assets/Images';
 
 const InterestRateAnalysis = () => {
@@ -223,14 +222,7 @@ const InterestRateAnalysis = () => {
 				contentContainerStyle={styles.scrollContent}
 				keyboardShouldPersistTaps="handled"
 			>
-				<View style={styles.loanBlurContainer}>
-					<BlurView
-						style={StyleSheet.absoluteFill}
-						blurAmount={11}
-						blurType="light"
-						overlayColor={AppColors.placeholderTextColor}
-						reducedTransparencyFallbackColor="white"
-					/>
+				<View style={[styles.loanBlurContainer, { backgroundColor: AppColors.placeholderTextColor }]}>
 
 					<ResultCard
 						title="Annual Interest Rate"
@@ -255,14 +247,7 @@ const InterestRateAnalysis = () => {
 						contentContainerStyle={styles.resultCardContainer}
 					/>
 				</View>
-				<View style={styles.inputSection}>
-					<BlurView
-						style={StyleSheet.absoluteFill}
-						blurAmount={11}
-						blurType="light"
-						overlayColor={AppColors.placeholderTextColor}
-						reducedTransparencyFallbackColor="white"
-					/>
+				<View style={[styles.inputSection, { backgroundColor: AppColors.placeholderTextColor }]}>
 					<View>
 						<View style={styles.header}>
 							<Image source={Images.IC_SETTINGS} style={styles.settingImg} />

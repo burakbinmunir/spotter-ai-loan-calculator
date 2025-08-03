@@ -125,7 +125,7 @@ const LoanParametersModal: React.FC<Props> = ({
 								}}
 								render={({ field: { onChange, value } }) => (
 									<CustomTextInput
-										label="Loan Amount"
+										label="Purchase Price"
 										placeholder="$175,000"
 										keyboardType="numeric"
 										value={value}
