@@ -11,4 +11,5 @@ export const Images = {
 	IC_ARROW_ABOVE: require('./ic_arrow_above.png'),
 	IC_CONCENTRIC_CIRCLE: require('./ic_concentric_circle.png'),
 	IC_ARROW: require('./ic_arrow.png'),
+	IC_STAR: require('./ic_star.png'),
 };

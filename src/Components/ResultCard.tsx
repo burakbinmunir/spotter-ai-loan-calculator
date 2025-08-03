@@ -6,7 +6,8 @@ import {
 	ViewStyle,
 	TextStyle,
 	Image,
-	ImageStyle, ImageURISource,
+	ImageStyle,
+	ImageURISource,
 } from 'react-native';
 import { AppColors, MetricsSizes } from '../Helpers/Variables.ts';
 
@@ -18,6 +19,9 @@ interface ResultCardProps {
 	titleStyle?: TextStyle;
 	imgStyle?: ImageStyle;
 	imgSrc?: ImageURISource;
+	imgContainer?: ViewStyle;
+	titleIcon?: ImageURISource;
+	titleIconStyle?: ImageStyle;
 }
 
 const ResultCard = ({
@@ -28,12 +32,15 @@ const ResultCard = ({
 	titleStyle,
 	imgStyle,
 	imgSrc,
+	imgContainer,
+	titleIconStyle,
+	titleIcon,
 }: ResultCardProps) => {
 	return (
 		<View style={[styles.card, contentContainerStyle]}>
 			<View style={[styles.container, {}]}>
 				{!!imgSrc && (
-					<View style={styles.imgContainer}>
+					<View style={[styles.imgContainer, imgContainer]}>
 						<Image
 							source={imgSrc}
 							style={[styles.imgStyle, imgStyle]}
@@ -41,7 +48,15 @@ const ResultCard = ({
 					</View>
 				)}
 				<View>
-					<Text style={[styles.title, titleStyle]}>{title}</Text>
+					<View style={styles.titleIconContainer}>
+						{!!titleIcon && (
+							<Image
+								source={titleIcon}
+								style={[styles.titleIconStyle, titleIconStyle]}
+							/>
+						)}
+						<Text style={[styles.title, titleStyle]}>{title}</Text>
+					</View>
 					<Text style={[styles.value, valueStyle]}>{value}</Text>
 				</View>
 			</View>
@@ -78,12 +93,21 @@ const styles = StyleSheet.create({
 		fontSize: 14,
 		color: 'white',
 		fontWeight: '600',
-		marginBottom: 4,
 	},
 	value: {
 		fontSize: 28,
 		fontWeight: 'bold',
 		color: 'white',
+	},
+	titleIconStyle: {
+		tintColor: AppColors.white,
+		width: 15,
+		height: 12,
+		marginRight: MetricsSizes.tiny,
+	},
+	titleIconContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
 	},
 });
 

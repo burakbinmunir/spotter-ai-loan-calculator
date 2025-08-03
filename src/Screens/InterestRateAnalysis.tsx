@@ -234,6 +234,15 @@ const InterestRateAnalysis = () => {
 
 					<ResultCard
 						title="Annual Interest Rate"
+						titleIcon={Images.IC_ARROW_ABOVE}
+						valueStyle={{
+							textAlign: 'center',
+						}}
+						titleIconStyle={{
+							height: 15,
+							width: 15,
+							marginRight: MetricsSizes.small,
+						}}
 						value={
 							Object.keys(errors).length > 0
 								? 'Invalid Input'

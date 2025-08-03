@@ -172,6 +172,11 @@ const AffordabilityAnalysis = () => {
 							/>
 							<View style={styles.resultsGrid}>
 								<ResultCard
+									titleIcon={Images.IC_DOLLAR}
+									titleIconStyle={styles.maxLoanIconStyle}
+									valueStyle={{
+										textAlign: 'center',
+									}}
 									title="Maximum Loan Amount"
 									value={
 										Object.keys(errors)?.length > 0
@@ -181,6 +186,11 @@ const AffordabilityAnalysis = () => {
 								/>
 								<ResultCard
 									title="Total Purchase Price"
+									titleIcon={Images.IC_STAR}
+									valueStyle={{
+										textAlign: 'center',
+									}}
+									titleIconStyle={styles.starIconStyle}
 									value={
 										Object.keys(errors)?.length > 0
 											? '$0.00'
@@ -325,6 +335,18 @@ const styles = StyleSheet.create({
 		width: 18,
 		tintColor: AppColors.white,
 		marginRight: MetricsSizes.small,
+	},
+	maxLoanIconStyle: {
+		tintColor: AppColors.aquaColor,
+		height: 15,
+		width: 15,
+		marginRight: MetricsSizes.small
+	},
+	starIconStyle: {
+		height: 15,
+		width: 15,
+		marginRight: MetricsSizes.small,
+
 	}
 });
 
