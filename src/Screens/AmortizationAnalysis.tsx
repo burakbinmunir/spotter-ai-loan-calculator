@@ -24,8 +24,13 @@ import { Images } from '../Assets/Images';
 import ResultCard from '../Components/ResultCard.tsx';
 import KeyValueItem from '../Components/KeyVaueItem.tsx';
 
-const formatCurrency = (val) => val ? `$${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "-";
-
+const formatCurrency = val =>
+	val
+		? `$${val.toLocaleString(undefined, {
+				minimumFractionDigits: 2,
+				maximumFractionDigits: 2,
+		  })}`
+		: '-';
 
 const AmortizationAnalysis = () => {
 	const [schedule, setSchedule] = useState<any[]>([]);
@@ -84,17 +89,18 @@ const AmortizationAnalysis = () => {
 		);
 		const oneTimePaymentMonth = parseInt(
 			loanParams.oneTimePaymentMonth ??
-			AMORTIZATION_FALLBACKS.oneTimePaymentMonth,
+			AMORTIZATION_FALLBACKS.oneTimePaymentMonth
 		);
 
 		const principal = loanAmount - downPayment;
 		const monthlyRate = annualRate / 100 / 12;
 		const amortizingAmount = principal;
 
+		const pvBalloon = balloonPayment / Math.pow(1 + monthlyRate, term);
 		const monthlyPayment =
 			monthlyRate === 0
-				? amortizingAmount / term
-				: (amortizingAmount * monthlyRate) /
+				? (amortizingAmount - balloonPayment) / term
+				: (amortizingAmount - pvBalloon) * monthlyRate /
 				(1 - Math.pow(1 + monthlyRate, -term));
 
 		let balance = amortizingAmount;
@@ -112,8 +118,7 @@ const AmortizationAnalysis = () => {
 		let payoffMonth = 0;
 
 		for (let i = 1; i <= term; i++) {
-			const fullBalance = balance + balloonPayment;
-			let interest = fullBalance * monthlyRate;
+			let interest = balance * monthlyRate;
 			let principalPaid = monthlyPayment - interest;
 
 			// Apply extra and one-time payments
@@ -125,7 +130,7 @@ const AmortizationAnalysis = () => {
 			// Avoid overpaying
 			if (principalPaid > balance) {
 				principalPaid = balance;
-				interest = fullBalance * monthlyRate;
+				interest = balance * monthlyRate;
 			}
 
 			const payment = principalPaid + interest;
@@ -138,7 +143,7 @@ const AmortizationAnalysis = () => {
 				payment: payment,
 				interest: interest,
 				principal: principalPaid,
-				balance: Math.max(0, balance + balloonPayment),
+				balance: Math.max(0, balance),
 			});
 
 			if (balance <= 0) {
@@ -147,7 +152,7 @@ const AmortizationAnalysis = () => {
 			}
 		}
 
-		// Handle balloon
+		// Handle balloon payment
 		if (balance > 0 && balloonPayment > 0) {
 			scheduleArray.push({
 				month: 'Balloon',
@@ -167,8 +172,7 @@ const AmortizationAnalysis = () => {
 		let totalInterestOriginal = 0;
 
 		for (let i = 1; i <= term; i++) {
-			const fullBalance = balanceOriginal + balloonPayment;
-			const interestOriginal = fullBalance * monthlyRate;
+			const interestOriginal = balanceOriginal * monthlyRate;
 			let principalOriginal = monthlyPayment - interestOriginal;
 
 			if (i === term) {
@@ -184,12 +188,10 @@ const AmortizationAnalysis = () => {
 		const interestSaved = totalInterestOriginal - totalInterest;
 		const totalPaymentsOriginal = monthlyPayment * term;
 
-		setInterestSaved(interestSaved ? interestSaved :"0.00");
+		setInterestSaved(interestSaved ? interestSaved : '0.00');
 		setTotalInterestOriginal(totalInterestOriginal);
 		setTotalPaymentsOriginal(totalPaymentsOriginal);
 	}, [loanParams]);
-
-
 
 	useEffect(() => {
 		generateSchedule();
@@ -215,7 +217,9 @@ const AmortizationAnalysis = () => {
 				<View style={styles.rowContainer}>
 					<View>
 						<Text style={styles.balanceText}>
-							{isBalloon ? "$0.00" : `${formatCurrency(item?.balance)}`}
+							{isBalloon
+								? '$0.00'
+								: `${formatCurrency(item?.balance)}`}
 						</Text>
 						<Text style={styles.subTextStyle}>
 							{`Payment: ${formatCurrency(item?.payment)}`}
@@ -343,7 +347,12 @@ const AmortizationAnalysis = () => {
 						))}
 					</View>
 					<View style={{ marginTop: 16 }}>
-						<TouchableOpacity onPress={() => setShowExtraPaymentOptions(prev => !prev)} style={styles.accordianContainer}>
+						<TouchableOpacity
+							onPress={() =>
+								setShowExtraPaymentOptions(prev => !prev)
+							}
+							style={styles.accordianContainer}
+						>
 							<View style={styles.accordianSubContainer}>
 								<Image
 									source={Images.IC_ARROW_ABOVE}
@@ -381,20 +390,24 @@ const AmortizationAnalysis = () => {
 										imgSrc={Images.IC_CONCENTRIC_CIRCLE}
 										valueStyle={styles.extraPaymentValue}
 										titleStyle={styles.extraPaymentTitle}
-										contentContainerStyle={styles.extraPaymentContainer}
+										contentContainerStyle={
+											styles.extraPaymentContainer
+										}
 									/>
 								)}
 
-								{!!interestSaved &&
+								{!!interestSaved && (
 									<ResultCard
 										title={'Interest Saved'}
 										value={formatCurrency(interestSaved)}
 										imgSrc={Images.IC_ARROW_ABOVE}
 										valueStyle={styles.extraPaymentValue}
 										titleStyle={styles.extraPaymentTitle}
-										contentContainerStyle={styles.extraPaymentContainer}
+										contentContainerStyle={
+											styles.extraPaymentContainer
+										}
 									/>
-								}
+								)}
 							</View>
 						)}
 					</View>
@@ -434,7 +447,9 @@ const AmortizationAnalysis = () => {
 								{!!totalPaymentsOriginal && (
 									<ResultCard
 										title={'Original Total Payments'}
-										value={formatCurrency(totalPaymentsOriginal)}
+										value={formatCurrency(
+											totalPaymentsOriginal,
+										)}
 										valueStyle={styles.loanSummaryValue}
 										contentContainerStyle={
 											styles.loanSummaryContainer
@@ -445,7 +460,9 @@ const AmortizationAnalysis = () => {
 								{!!totalInterestOriginal && (
 									<ResultCard
 										title={'Original Total Interest'}
-										value={formatCurrency(totalInterestOriginal)}
+										value={formatCurrency(
+											totalInterestOriginal,
+										)}
 										valueStyle={styles.loanSummaryValue}
 										contentContainerStyle={
 											styles.loanSummaryContainer
@@ -645,14 +662,13 @@ const styles = StyleSheet.create({
 	},
 	extraPaymentContainer: {
 		alignItems: 'flex-start',
-		backgroundColor:
-		AppColors.aquaColor,
+		backgroundColor: AppColors.aquaColor,
 	},
 	balanceText: {
 		fontWeight: '500',
 		color: AppColors.white,
 		fontSize: FontSize.large,
-	}
+	},
 });
 
 export default AmortizationAnalysis;
