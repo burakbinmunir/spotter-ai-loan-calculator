@@ -1,7 +1,8 @@
 // components/LoanParametersModal.tsx
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import {
+	Image,
 	Modal,
 	ScrollView,
 	StyleSheet,
@@ -11,7 +12,12 @@ import {
 } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import CustomTextInput from './CustomTextInput';
-import { AMORTIZATION_FALLBACKS, AppColors } from '../Helpers/Variables';
+import {
+	AMORTIZATION_FALLBACKS,
+	AppColors,
+	MetricsSizes,
+} from '../Helpers/Variables';
+import { Images } from '../Assets/Images';
 
 interface Props {
 	visible: boolean;
@@ -38,121 +44,73 @@ const LoanParametersModal: React.FC<Props> = ({
 		control,
 		handleSubmit,
 		formState: { errors },
-		setError,
-		clearErrors,
-		watch,
 	} = useForm<FormData>({
 		defaultValues,
 	});
 
-	const loanAmount = watch('loanAmount');
-	const term = watch('term');
-	const interestRate = watch('interestRate');
-	const downPayment = watch('downPayment');
-	const balloonPayment = watch('balloonPayment');
+	const onSubmit = (data: FormData) => {
+		const modifiedData = {
+			...data,
+			interestRate:
+				parseFloat(data.interestRate) ||
+				AMORTIZATION_FALLBACKS.interestRate,
+			loanAmount:
+				parseFloat(data.loanAmount) ||
+				AMORTIZATION_FALLBACKS.loanAmount,
+			term: parseFloat(data.term) || AMORTIZATION_FALLBACKS.loanTerm,
+			downPayment:
+				parseFloat(data.downPayment) ||
+				AMORTIZATION_FALLBACKS.downPayment,
+			balloonPayment:
+				parseFloat(data.balloonPayment) ||
+				AMORTIZATION_FALLBACKS.balloonPayment,
+			customField: 'addedManually',
+		};
 
-	useEffect(() => {
-		const parsedLoan = parseFloat(
-			loanAmount || AMORTIZATION_FALLBACKS.loanAmount,
-		);
-		const parsedInterest = parseFloat(
-			interestRate || AMORTIZATION_FALLBACKS.interestRate,
-		);
-		const parsedTerm = parseInt(
-			term || AMORTIZATION_FALLBACKS.loanTerm,
-			10,
-		);
-		const parsedDown = parseFloat(
-			downPayment || AMORTIZATION_FALLBACKS.downPayment,
-		);
-		const parsedBalloon = parseFloat(
-			balloonPayment || AMORTIZATION_FALLBACKS.balloonPayment,
-		);
-
-		// Loan Amount
-		if (isNaN(parsedLoan) || parsedLoan < 0.01) {
-			setError('loanAmount', {
-				type: 'manual',
-				message: 'Loan amount must be at least 0.01',
-			});
-		} else {
-			clearErrors('loanAmount');
-		}
-
-		// Interest Rate
-		if (isNaN(parsedInterest) || parsedInterest < 0) {
-			setError('interestRate', {
-				type: 'manual',
-				message: 'Value must be at least 0.',
-			});
-		} else {
-			clearErrors('interestRate');
-		}
-
-		// Term
-		if (isNaN(parsedTerm) || parsedTerm < 1) {
-			setError('term', {
-				type: 'manual',
-				message: 'Value must be at least 1.',
-			});
-		} else if (parsedTerm > 1200) {
-			setError('term', {
-				type: 'manual',
-				message: 'Value cannot exceed 1200.',
-			});
-		} else {
-			clearErrors('term');
-		}
-
-		// Down Payment
-		if (isNaN(parsedDown) || parsedDown < 0) {
-			setError('downPayment', {
-				type: 'manual',
-				message: 'Value must be at least 0.',
-			});
-		} else if (parsedDown > parsedLoan) {
-			setError('downPayment', {
-				type: 'manual',
-				message: 'Down payment cannot exceed purchase price.',
-			});
-		} else {
-			clearErrors('downPayment');
-		}
-
-		// Balloon Payment
-		if (isNaN(parsedBalloon) || parsedBalloon < 0) {
-			setError('balloonPayment', {
-				type: 'manual',
-				message: 'Value must be at least 0.',
-			});
-		} else if (parsedBalloon > parsedLoan) {
-			setError('balloonPayment', {
-				type: 'manual',
-				message: 'Balloon cannot exceed loan amount.',
-			});
-		} else {
-			clearErrors('balloonPayment');
-		}
-	}, [loanAmount, interestRate, term, downPayment, balloonPayment]);
+		onSave(modifiedData);
+	};
 
 	return (
 		<Modal visible={visible} transparent animationType="slide">
 			<View style={styles.overlay}>
 				<View style={styles.modal}>
 					<View style={styles.header}>
-						<Text style={styles.title}>Loan Parameters</Text>
+						<View style={styles.titleContainer}>
+							<Image
+								source={Images.IC_SETTINGS}
+								style={styles.settingsImg}
+							/>
+							<Text style={styles.title}>Loan Parameters</Text>
+						</View>
 						<TouchableOpacity onPress={onClose}>
 							<Text style={styles.closeButton}>✕</Text>
 						</TouchableOpacity>
 					</View>
 
-					<ScrollView style={styles.scroll}>
-						<View style={styles.inputGrid}>
+					<ScrollView
+						style={styles.scroll}
+						showsVerticalScrollIndicator={false}
+					>
+						<View>
 							{/** Loan Amount */}
 							<Controller
 								control={control}
 								name="loanAmount"
-								rules={{ required: 'Required' }}
+								rules={{
+									validate: value => {
+										const parsedLoan = parseFloat(
+											value ||
+												AMORTIZATION_FALLBACKS.loanAmount,
+										);
+										if (
+											isNaN(parsedLoan) ||
+											parsedLoan < 0.01
+										) {
+											return 'Loan amount must be at least 0.01'; // Use semicolon or just return
+										}
+										return true;
+									},
+								}}
 								render={({ field: { onChange, value } }) => (
 									<CustomTextInput
 										label="Loan Amount"
@@ -160,6 +118,8 @@ const LoanParametersModal: React.FC<Props> = ({
 										keyboardType="numeric"
 										value={value}
 										onChangeText={onChange}
+										imgSrc={Images.IC_DOLLAR}
+										imgStyles={styles.iconStyles}
 										error={errors.loanAmount?.message}
 									/>
 								)}
@@ -169,6 +129,21 @@ const LoanParametersModal: React.FC<Props> = ({
 							<Controller
 								control={control}
 								name="interestRate"
+								rules={{
+									validate: value => {
+										const parsedInterest = parseFloat(
+											value ||
+												AMORTIZATION_FALLBACKS.interestRate,
+										);
+										if (
+											isNaN(parsedInterest) ||
+											parsedInterest < 0
+										) {
+											return 'Value must be at least 0.';
+										}
+										return true;
+									},
+								}}
 								render={({ field: { onChange, value } }) => (
 									<CustomTextInput
 										label="Interest Rate (%)"
@@ -176,6 +151,8 @@ const LoanParametersModal: React.FC<Props> = ({
 										keyboardType="numeric"
 										value={value}
 										onChangeText={onChange}
+										imgSrc={Images.IC_ARROW_ABOVE}
+										imgStyles={styles.arrowIconStyle}
 										error={errors.interestRate?.message}
 									/>
 								)}
@@ -185,6 +162,23 @@ const LoanParametersModal: React.FC<Props> = ({
 							<Controller
 								control={control}
 								name="term"
+								rules={{
+									validate: value => {
+										const parsedTerm = parseFloat(
+											value ||
+												AMORTIZATION_FALLBACKS.loanTerm,
+										);
+										if (
+											isNaN(parsedTerm) ||
+											parsedTerm < 1
+										) {
+											return 'Value must be at least 1.';
+										} else if (parsedTerm > 1200) {
+											return 'Value cannot exceed 1200.';
+										}
+										return true;
+									},
+								}}
 								render={({ field: { onChange, value } }) => (
 									<CustomTextInput
 										label="Term (months)"
@@ -192,6 +186,8 @@ const LoanParametersModal: React.FC<Props> = ({
 										keyboardType="numeric"
 										value={value}
 										onChangeText={onChange}
+										imgSrc={Images.IC_CONCENTRIC_CIRCLE}
+										imgStyles={styles.arrowIconStyle}
 										error={errors.term?.message}
 									/>
 								)}
@@ -201,6 +197,29 @@ const LoanParametersModal: React.FC<Props> = ({
 							<Controller
 								control={control}
 								name="downPayment"
+								rules={{
+									validate: (value, formValues) => {
+										const parsedDown = parseFloat(
+											value ||
+												AMORTIZATION_FALLBACKS.downPayment,
+										);
+										const parsedLoan = parseFloat(
+											formValues.loanAmount ||
+												AMORTIZATION_FALLBACKS.loanAmount,
+										);
+
+										if (
+											isNaN(parsedDown) ||
+											parsedDown < 0
+										) {
+											return 'Value must be at least 0.';
+										} else if (parsedDown > parsedLoan) {
+											return 'Down payment cannot exceed purchase price.';
+										}
+
+										return true;
+									},
+								}}
 								render={({ field: { onChange, value } }) => (
 									<CustomTextInput
 										label="Down Payment"
@@ -208,6 +227,8 @@ const LoanParametersModal: React.FC<Props> = ({
 										keyboardType="numeric"
 										value={value}
 										onChangeText={onChange}
+										imgSrc={Images.IC_DOLLAR}
+										imgStyles={styles.iconStyles}
 										error={errors.downPayment?.message}
 									/>
 								)}
@@ -217,11 +238,34 @@ const LoanParametersModal: React.FC<Props> = ({
 							<Controller
 								control={control}
 								name="balloonPayment"
+								rules={{
+									validate: (value, formValues) => {
+										const parsedBalloon = parseFloat(
+											value ||
+												AMORTIZATION_FALLBACKS.balloonPayment,
+										);
+										const parsedLoan = parseFloat(
+											formValues.loanAmount ||
+												AMORTIZATION_FALLBACKS.loanAmount,
+										);
+										if (
+											isNaN(parsedBalloon) ||
+											parsedBalloon < 0
+										) {
+											return 'Value must be at least 0.';
+										} else if (parsedBalloon > parsedLoan) {
+											return 'Balloon cannot exceed loan amount.';
+										}
+										return true;
+									},
+								}}
 								render={({ field: { onChange, value } }) => (
 									<CustomTextInput
 										label="Balloon Payment"
 										placeholder="$0"
 										keyboardType="numeric"
+										imgSrc={Images.IC_DOLLAR}
+										imgStyles={styles.iconStyles}
 										value={value}
 										onChangeText={onChange}
 										error={errors.balloonPayment?.message}
@@ -233,8 +277,14 @@ const LoanParametersModal: React.FC<Props> = ({
 
 					<View style={styles.footer}>
 						<TouchableOpacity
+							style={styles.cancelButton}
+							onPress={onClose}
+						>
+							<Text style={styles.saveButtonText}>Cancel</Text>
+						</TouchableOpacity>
+						<TouchableOpacity
 							style={styles.saveButton}
-							onPress={handleSubmit(onSave)}
+							onPress={handleSubmit(onSubmit)}
 						>
 							<Text style={styles.saveButtonText}>
 								Save Changes
@@ -254,7 +304,7 @@ const styles = StyleSheet.create({
 		backgroundColor: 'rgba(0,0,0,0.4)',
 	},
 	modal: {
-		backgroundColor: AppColors.royalBlue,
+		backgroundColor: AppColors.modalBackgroundColor,
 		borderTopLeftRadius: 20,
 		borderTopRightRadius: 20,
 		padding: 20,
@@ -264,7 +314,7 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'center',
-		marginBottom: 12,
+		marginBottom: MetricsSizes.small,
 	},
 	title: {
 		color: 'white',
@@ -278,22 +328,53 @@ const styles = StyleSheet.create({
 	scroll: {
 		maxHeight: 400,
 	},
-	inputGrid: {
-		gap: 16,
-	},
 	footer: {
+		flexDirection: 'row',
 		marginTop: 20,
 	},
+
 	saveButton: {
+		flex: 1, // make each button take equal space
 		backgroundColor: AppColors.aquaColor,
 		paddingVertical: 14,
 		borderRadius: 10,
 		alignItems: 'center',
+		marginHorizontal: 5,
+	},
+	titleContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+	},
+	cancelButton: {
+		flex: 1,
+		borderWidth: 1,
+		borderColor: AppColors.aquaColor,
+		paddingVertical: 14,
+		borderRadius: 10,
+		alignItems: 'center',
+		marginHorizontal: 5,
+	},
+	settingsImg: {
+		tintColor: AppColors.white,
+		width: 17,
+		height: 17,
+		marginRight: 5,
 	},
 	saveButtonText: {
-		color: 'white',
+		color: AppColors.white,
 		fontWeight: '600',
 		fontSize: 16,
+	},
+	iconStyles: {
+		height: 20,
+		width: 20,
+		tintColor: AppColors.white,
+	},
+	arrowIconStyle: {
+		height: 15,
+		width: 15,
+		marginRight: MetricsSizes.small,
+		tintColor: AppColors.white,
 	},
 });
 

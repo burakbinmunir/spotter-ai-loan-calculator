@@ -33,7 +33,7 @@ export const AppColors = {
 	white: "#ffffff",
 	greyishWhite: "#CBD5E1",
 	placeholderTextColor: 'rgba(55,62,80,0.62)',
-
+	modalBackgroundColor: '#033241',
 	black: "#000000",
 	emraldGreen: "#033241",
 }

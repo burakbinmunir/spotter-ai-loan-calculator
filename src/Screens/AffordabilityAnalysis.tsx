@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+	Image,
 	KeyboardAvoidingView,
 	Platform,
 	SafeAreaView,
@@ -8,11 +9,12 @@ import {
 	Text,
 	View,
 } from 'react-native';
-import { AFFORDABILITY_FALLBACKS, AppColors } from '../Helpers/Variables.ts';
+import { AFFORDABILITY_FALLBACKS, AppColors, MetricsSizes } from '../Helpers/Variables.ts';
 import CustomTextInput from '../Components/CustomTextInput.tsx';
 import { Controller, useForm } from 'react-hook-form';
 import ResultCard from '../Components/ResultCard.tsx';
 import { BlurView } from '@react-native-community/blur';
+import { Images } from '../Assets/Images/index.ts';
 
 const AffordabilityAnalysis = () => {
 	const [maxLoanAmount, setMaxLoanAmount] = useState('');
@@ -200,9 +202,12 @@ const AffordabilityAnalysis = () => {
 							reducedTransparencyFallbackColor="white"
 						/>
 						<View>
-							<Text style={styles.sectionTitle}>
-								Loan Parameters
-							</Text>
+							<View style={styles.header}>
+								<Image source={Images.IC_SETTINGS} style={styles.settingImg} />
+								<Text style={styles.sectionTitle}>
+									Loan Parameters
+								</Text>
+							</View>
 
 							<Controller
 								control={control}
@@ -299,8 +304,7 @@ const styles = StyleSheet.create({
 	sectionTitle: {
 		fontSize: 20,
 		fontWeight: '600',
-		color: AppColors.greyishWhite,
-		marginBottom: 20,
+		color: AppColors.white,
 	},
 	blurContainer: {
 		borderRadius: 16,
@@ -312,6 +316,16 @@ const styles = StyleSheet.create({
 		borderRadius: 16,
 		overflow: 'hidden',
 	},
+	header: {
+		flexDirection: 'row',
+		alignItems: 'center'
+	},
+	settingImg: {
+		height: 18,
+		width: 18,
+		tintColor: AppColors.white,
+		marginRight: MetricsSizes.small,
+	}
 });
 
 export default AffordabilityAnalysis;

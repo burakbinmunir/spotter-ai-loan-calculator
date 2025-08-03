@@ -9,7 +9,7 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native';
-import { AppColors, FontSize, MetricsSizes } from '../Helpers/Variables';
+import { AMORTIZATION_FALLBACKS, AppColors, FontSize, MetricsSizes } from '../Helpers/Variables';
 import { BlurView } from '@react-native-community/blur';
 import LoanParametersModal, {
 	FormData,
@@ -51,11 +51,11 @@ const AmortizationAnalysis = () => {
 		isNaN(parseFloat(val)) ? fallback : parseFloat(val);
 
 	const generateSchedule = useCallback(() => {
-		const loanAmount = parseFloatSafe(loanParams.loanAmount);
-		const annualRate = parseFloatSafe(loanParams.interestRate);
-		const term = parseFloatSafe(loanParams.term);
-		const downPayment = parseFloatSafe(loanParams.downPayment);
-		const balloonPayment = parseFloatSafe(loanParams.balloonPayment);
+		const loanAmount = parseFloatSafe(loanParams.loanAmount || AMORTIZATION_FALLBACKS.loanAmount);
+		const annualRate = parseFloatSafe(loanParams.interestRate || AMORTIZATION_FALLBACKS.interestRate);
+		const term = parseFloatSafe(loanParams.term || AMORTIZATION_FALLBACKS.loanTerm);
+		const downPayment = parseFloatSafe(loanParams.downPayment || AMORTIZATION_FALLBACKS.downPayment);
+		const balloonPayment = parseFloatSafe(loanParams.balloonPayment || AMORTIZATION_FALLBACKS.balloonPayment);
 
 		const principal = loanAmount - downPayment;
 		const monthlyRate = annualRate / 100 / 12;
@@ -143,9 +143,10 @@ const AmortizationAnalysis = () => {
 							style={{
 								fontWeight: '500',
 								color: AppColors.white,
+								fontSize: FontSize.large,
 							}}
 						>
-							{`Payment: ${item.payment}`}
+							{`${item.payment}`}
 						</Text>
 						<Text style={styles.subTextStyle}>
 							{`Interest Rate ${item.interest}`}
@@ -153,17 +154,14 @@ const AmortizationAnalysis = () => {
 					</View>
 					<View>
 						<Text
-							style={{
-								fontWeight: '500',
-								color: AppColors.white,
-							}}
+							style={styles.subTextStyle}
+
 						>
 							{`Principal: ${item.principal}`}
 						</Text>
 						<Text
 							style={[
 								styles.subTextStyle,
-								// { alignSelf: 'flex-end' },
 							]}
 						>
 							{`Balance: ${item.balance}`}
@@ -174,30 +172,39 @@ const AmortizationAnalysis = () => {
 		);
 	};
 
-	const { loanAmount, interestRate, term, downPayment, balloonPayment } =
+	const { loanAmount , interestRate, term, downPayment, balloonPayment } =
 		loanParams;
 
 	const infoItems = [
 		{
-			keyItem: 'Term',
-			value: `${term} months`,
-			imgSrc: Images.IC_CLOCk,
-		},
-		{
 			keyItem: 'Down Payment',
 			value: `$${parseFloatSafe(downPayment).toLocaleString()}`,
-			imgSrc: Images.IC_DOWN_PAYMENT,
-		},
-		{
-			keyItem: 'Balloon Payment',
-			value: `$${parseFloatSafe(balloonPayment).toLocaleString()}`,
-			imgSrc: Images.IC_BALLOON_PAYMENT,
+			imgSrc: Images.IC_DOLLAR,
+			imgHeight: 15,
+			imgWidth: 15,
+		},{
+			keyItem: 'Term',
+			value: `${term} months`,
+			imgSrc: Images.IC_CONCENTRIC_CIRCLE,
+			imgHeight: 15,
+			imgWidth: 15,
 		},
 		{
 			keyItem: 'Interest Rate',
 			value: `${interestRate}%`,
-			imgSrc: Images.IC_INTEREST_RATE,
+			imgSrc: Images.IC_ARROW_ABOVE,
+			imgHeight: 15,
+			imgWidth: 15,
 		},
+
+		{
+			keyItem: 'Balloon Payment',
+			value: `$${parseFloatSafe(balloonPayment).toLocaleString()}`,
+			imgSrc: Images.IC_DOLLAR,
+			imgHeight: 15,
+			imgWidth: 15,
+		},
+
 	];
 
 	return (
@@ -229,7 +236,7 @@ const AmortizationAnalysis = () => {
 							<View style={styles.editContainer}>
 								<Image
 									source={Images.IC_EDIT}
-									style={styles.icon}
+									style={styles.editIcon}
 								/>
 							</View>
 						</TouchableOpacity>
@@ -247,8 +254,8 @@ const AmortizationAnalysis = () => {
 								value={item.value}
 								imgSrc={item.imgSrc}
 								imgStyle={{
-									height: 15,
-									width: 15,
+									height: item.imgHeight,
+									width: item.imgWidth,
 									tintColor: AppColors.white,
 								}}
 							/>
@@ -275,6 +282,7 @@ const AmortizationAnalysis = () => {
 				onClose={() => setShowInputModal(false)}
 				defaultValues={loanParams}
 				onSave={(data: FormData) => {
+					console.log('data', data);
 					setLoanParams(data);
 					setShowInputModal(false);
 				}}
@@ -293,6 +301,11 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 	},
+	editIcon:{
+		height: 15,
+		width: 15,
+		tintColor: AppColors.white,
+	},
 	icon: {
 		height: 15,
 		width: 15,
@@ -305,7 +318,6 @@ const styles = StyleSheet.create({
 	},
 	container: {
 		flex: 1,
-		// backgroundColor: '#f8fafc',
 		backgroundColor: AppColors.royalBlue,
 	},
 	content: {
@@ -313,21 +325,16 @@ const styles = StyleSheet.create({
 		padding: 20,
 	},
 	summaryCard: {
-		// backgroundColor: '#ffffff',
-		// resultsContainer: {
-		padding: 16,
+		padding: 12,
+		paddingVertical: MetricsSizes.medium,
 		borderRadius: 20,
 		backgroundColor: AppColors.emraldGreen,
 		overflow: 'hidden',
-
-		// iOS & Android glow shadow
 		shadowColor: '#000',
 		shadowOffset: { width: 0, height: 8 },
 		shadowOpacity: 0.1,
 		shadowRadius: 16,
-		elevation: 5, // Android shadow
-
-		// Optional: border for frosted edge
+		elevation: 5,
 		borderColor: 'rgba(255,255,255,0.2)',
 		borderWidth: 1,
 	},
@@ -365,7 +372,7 @@ const styles = StyleSheet.create({
 	subTextStyle: {
 		marginTop: MetricsSizes.tiny,
 		fontSize: FontSize.small,
-		color: 'grey',
+		color: AppColors.greyishWhite,
 	},
 	itemCard: {
 		backgroundColor: AppColors.emraldGreen,
@@ -394,12 +401,13 @@ const styles = StyleSheet.create({
 		marginVertical: MetricsSizes.small,
 		flexDirection: 'row',
 		justifyContent: 'space-between',
+		marginTop: MetricsSizes.regular,
 	},
 	editContainer: {
-		borderWidth: 1,
-		borderRadius: 30,
-		borderColor: AppColors.white,
-		padding: MetricsSizes.small,
+		// borderWidth: 1,
+		// borderRadius: 30,
+		// borderColor: AppColors.white,
+		// padding: MetricsSizes.small - 1,
 		alignSelf: 'flex-end',
 	},
 });

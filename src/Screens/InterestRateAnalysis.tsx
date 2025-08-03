@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
+	Image,
 	KeyboardAvoidingView,
 	Platform,
 	ScrollView,
-	StyleSheet,
+	StyleSheet, Text,
 	View,
 } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
@@ -15,6 +16,7 @@ import {
 import ResultCard from '../Components/ResultCard.tsx';
 import CustomTextInput from '../Components/CustomTextInput.tsx';
 import { BlurView } from '@react-native-community/blur';
+import { Images } from '../Assets/Images';
 
 const InterestRateAnalysis = () => {
 	const {
@@ -253,6 +255,12 @@ const InterestRateAnalysis = () => {
 						reducedTransparencyFallbackColor="white"
 					/>
 					<View>
+						<View style={styles.header}>
+							<Image source={Images.IC_SETTINGS} style={styles.settingImg} />
+							<Text style={styles.sectionTitle}>
+								Loan Parameters
+							</Text>
+						</View>
 						<Controller
 							control={control}
 							name="loanAmount"
@@ -364,6 +372,21 @@ const styles = StyleSheet.create({
 	resultCardContainer: {
 		backgroundColor: AppColors.aquaColor,
 		margin: MetricsSizes.medium,
+	},
+	header: {
+		flexDirection: 'row',
+		alignItems: 'center'
+	},
+	settingImg: {
+		height: 18,
+		width: 18,
+		tintColor: AppColors.white,
+		marginRight: MetricsSizes.small,
+	},
+	sectionTitle: {
+		fontSize: 20,
+		fontWeight: '600',
+		color: AppColors.white,
 	},
 });
 
