@@ -98,6 +98,8 @@ const styles = StyleSheet.create({
 		fontSize: 28,
 		fontWeight: 'bold',
 		color: 'white',
+		flexWrap: 'wrap',
+		flexShrink: 1,
 	},
 	titleIconStyle: {
 		tintColor: AppColors.white,

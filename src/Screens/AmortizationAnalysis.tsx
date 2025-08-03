@@ -210,24 +210,24 @@ const AmortizationAnalysis = () => {
 							{isBalloon
 								? '$0.00'
 								: `${GenericHelper.formatCurrency(
-										item?.balance,
+										item?.balance,1
 								  )}`}
 						</Text>
 						<Text style={styles.subTextStyle}>
 							{`Payment: ${GenericHelper.formatCurrency(
-								item?.payment,
+								item?.payment,1
 							)}`}
 						</Text>
 					</View>
 					<View>
 						<Text style={styles.subTextStyle}>
 							{`Interest Rate: ${GenericHelper.formatCurrency(
-								item?.interest,
+								item?.interest,1
 							)}`}
 						</Text>
 						<Text style={[styles.subTextStyle]}>
 							{`Principal: ${GenericHelper.formatCurrency(
-								item?.principal,
+								item?.principal,1
 							)}`}
 						</Text>
 					</View>
@@ -650,6 +650,7 @@ const styles = StyleSheet.create({
 	},
 	extraPaymentValue: {
 		fontSize: FontSize.large,
+		maxWidth: "90%",
 	},
 	extraPaymentTitle: {
 		fontSize: FontSize.small,

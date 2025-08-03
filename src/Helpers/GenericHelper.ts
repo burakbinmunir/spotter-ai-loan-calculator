@@ -1,9 +1,9 @@
 export class GenericHelper {
-	static formatCurrency = val => {
+	static formatCurrency = (val, decimalPoint = 2) => {
 		return val
 			? `$${val.toLocaleString(undefined, {
-					minimumFractionDigits: 2,
-					maximumFractionDigits: 2,
+					minimumFractionDigits: decimalPoint,
+					maximumFractionDigits: decimalPoint,
 			  })}`
 			: '-';
 	};
