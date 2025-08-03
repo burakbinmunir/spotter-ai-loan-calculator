@@ -22,26 +22,8 @@ import LoanParametersModal, {
 } from '../Components/LoanParametersModal';
 import { Images } from '../Assets/Images';
 import ResultCard from '../Components/ResultCard.tsx';
+import KeyValueItem from '../Components/KeyVaueItem.tsx';
 
-interface KeyValueItemProps {
-	keyItem: string;
-	value: string;
-	imgSrc: ImageSourcePropType;
-	imgStyle?: ImageProps;
-}
-
-const KeyValueItem = ({ imgSrc, value, imgStyle }: KeyValueItemProps) => {
-	return (
-		<View
-			style={{
-				alignItems: 'center',
-			}}
-		>
-			<Image source={imgSrc} style={imgStyle} />
-			<Text style={styles.summaryValue}>{value}</Text>
-		</View>
-	);
-};
 
 const AmortizationAnalysis = () => {
 	const [schedule, setSchedule] = useState<any[]>([]);
@@ -553,11 +535,6 @@ const styles = StyleSheet.create({
 		elevation: 5,
 		borderColor: 'rgba(255,255,255,0.2)',
 		borderWidth: 1,
-	},
-	summaryValue: {
-		fontSize: FontSize.small,
-		textAlign: 'center',
-		color: AppColors.white,
 	},
 	scheduleSection: {
 		flex: 1,
