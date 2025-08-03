@@ -350,6 +350,7 @@ const styles = StyleSheet.create({
 	inputSection: {
 		borderRadius: 16,
 		padding: 16,
+		paddingVertical: 14,
 		overflow: 'hidden',
 		marginVertical: 20,
 		shadowColor: '#000',

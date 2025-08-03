@@ -3,9 +3,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import AmortizationAnalysis from '../Screens/AmortizationAnalysis.tsx';
 import AffordabilityAnalysis from '../Screens/AffordabilityAnalysis.tsx';
 import InterestRateAnalysis from '../Screens/InterestRateAnalysis.tsx';
-import { AppColors } from '../Helpers/Variables.ts';
-import { Image, View } from 'react-native';
-import { Images } from '../Assets/Images';
+import { AppColors, MetricsSizes, TAB_IMAGES } from '../Helpers/Variables.ts';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
 const Tab = createBottomTabNavigator();
 
@@ -15,7 +14,32 @@ const ApplicationNavigator = () => {
 			screenOptions={{
 				headerShown: true,
 				headerBackground: () => (
-					<View style={{ flex: 1, backgroundColor: AppColors.emraldGreen }} />
+					<View
+						style={{
+							flex: 1,
+							backgroundColor: AppColors.emraldGreen,
+						}}
+					/>
+				),
+				header: props => (
+					<View
+						style={{
+							height: 50,
+							flexDirection: 'row',
+							alignItems: 'center',
+							backgroundColor: AppColors.emraldGreen,
+							// justifyContent: 'flex-end',
+							paddingHorizontal: 16,
+						}}
+					>
+						<Image
+							source={TAB_IMAGES[props.route.name]}
+							style={styles.tabIconStyle}
+						/>
+						<Text style={{ color: AppColors.white, fontSize: 20 }}>
+							{props?.options.title}
+						</Text>
+					</View>
 				),
 				headerTintColor: AppColors.white,
 				tabBarActiveTintColor: AppColors.aquaColor,
@@ -25,18 +49,24 @@ const ApplicationNavigator = () => {
 					borderTopWidth: 1,
 				},
 			}}
-
-			>
+		>
 			<Tab.Screen
 				name="AmortizationAnalysis"
 				component={AmortizationAnalysis}
 				options={{
 					title: 'Amortization Analysis',
 					tabBarIcon: ({ focused }) => (
-						<Image style={{ height: 20, width: 20, tintColor: focused ? AppColors.aquaColor : '#8E8E93', }}
-							   source={Images.IC_BAR_CHART}
+						<Image
+							style={{
+								height: 20,
+								width: 20,
+								tintColor: focused
+									? AppColors.aquaColor
+									: '#8E8E93',
+							}}
+							source={TAB_IMAGES.AmortizationAnalysis}
 						/>
-					)
+					),
 				}}
 			/>
 			<Tab.Screen
@@ -45,10 +75,17 @@ const ApplicationNavigator = () => {
 				options={{
 					title: 'Affordability Analysis',
 					tabBarIcon: ({ focused }) => (
-						<Image style={{ height: 20, width: 20, tintColor: focused ? AppColors.aquaColor : '#8E8E93', }}
-							   source={Images.IC_PIE_CHART}
+						<Image
+							style={{
+								height: 20,
+								width: 20,
+								tintColor: focused
+									? AppColors.aquaColor
+									: '#8E8E93',
+							}}
+							source={TAB_IMAGES.AffordabilityAnalysis}
 						/>
-					)
+					),
 				}}
 			/>
 			<Tab.Screen
@@ -57,10 +94,17 @@ const ApplicationNavigator = () => {
 				options={{
 					title: 'Interest Rate Analysis',
 					tabBarIcon: ({ focused }) => (
-						<Image style={{ height: 20, width: 20, tintColor: focused ? AppColors.aquaColor : '#8E8E93', }}
-							   source={Images.IC_ARROW_ABOVE}
+						<Image
+							style={{
+								height: 20,
+								width: 20,
+								tintColor: focused
+									? AppColors.aquaColor
+									: '#8E8E93',
+							}}
+							source={TAB_IMAGES.InterestRateAnalysis}
 						/>
-					)
+					),
 				}}
 			/>
 		</Tab.Navigator>
@@ -68,3 +112,12 @@ const ApplicationNavigator = () => {
 };
 
 export default ApplicationNavigator;
+
+const styles = StyleSheet.create({
+	tabIconStyle: {
+		height: 20,
+		width: 20,
+		tintColor: AppColors.white,
+		marginRight: MetricsSizes.small,
+	},
+});

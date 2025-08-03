@@ -1,3 +1,5 @@
+import { Images } from '../Assets/Images';
+
 export const FontSize = {
 	extraSmall: 10,
 	small: 12,
@@ -65,4 +67,10 @@ export const AMORTIZATION_FALLBACKS = {
 	loanTerm: '60',
 	downPayment: '0',
 	balloonPayment: '0',
+}
+
+export const TAB_IMAGES = {
+	['AmortizationAnalysis'] : Images.IC_BAR_CHART,
+	['InterestRateAnalysis'] : Images.IC_ARROW_ABOVE,
+	['AffordabilityAnalysis']: Images.IC_PIE_CHART
 }
