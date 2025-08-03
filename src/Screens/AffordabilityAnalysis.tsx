@@ -155,7 +155,7 @@ const AffordabilityAnalysis = () => {
 	]);
 
 	return (
-		<SafeAreaView style={styles.safeArea}>
+		<View style={styles.safeArea}>
 			<KeyboardAvoidingView
 				style={styles.container}
 				behavior={Platform.select({ ios: 'padding' })}
@@ -292,7 +292,7 @@ const AffordabilityAnalysis = () => {
 					</View>
 				</ScrollView>
 			</KeyboardAvoidingView>
-		</SafeAreaView>
+		</View>
 	);
 };
 

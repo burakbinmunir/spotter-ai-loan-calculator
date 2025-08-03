@@ -5,10 +5,13 @@ import AffordabilityAnalysis from '../Screens/AffordabilityAnalysis.tsx';
 import InterestRateAnalysis from '../Screens/InterestRateAnalysis.tsx';
 import { AppColors, MetricsSizes, TAB_IMAGES } from '../Helpers/Variables.ts';
 import { Image, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Tab = createBottomTabNavigator();
 
 const ApplicationNavigator = () => {
+	const insets = useSafeAreaInsets();
+
 	return (
 		<Tab.Navigator
 			screenOptions={{
@@ -24,11 +27,11 @@ const ApplicationNavigator = () => {
 				header: props => (
 					<View
 						style={{
-							height: 50,
 							flexDirection: 'row',
 							alignItems: 'center',
+							paddingTop: insets.top,
+							height: 50 + insets.top,
 							backgroundColor: AppColors.emraldGreen,
-							// justifyContent: 'flex-end',
 							paddingHorizontal: 16,
 						}}
 					>
@@ -46,7 +49,6 @@ const ApplicationNavigator = () => {
 				tabBarInactiveTintColor: '#8E8E93',
 				tabBarStyle: {
 					backgroundColor: AppColors.emraldGreen,
-					borderTopWidth: 1,
 				},
 			}}
 		>
@@ -54,7 +56,7 @@ const ApplicationNavigator = () => {
 				name="AmortizationAnalysis"
 				component={AmortizationAnalysis}
 				options={{
-					title: 'Amortization Analysis',
+					title: 'Amortization Calculator',
 					tabBarIcon: ({ focused }) => (
 						<Image
 							style={{
@@ -73,7 +75,7 @@ const ApplicationNavigator = () => {
 				name="AffordabilityAnalysis"
 				component={AffordabilityAnalysis}
 				options={{
-					title: 'Affordability Analysis',
+					title: 'Affordability Calculator',
 					tabBarIcon: ({ focused }) => (
 						<Image
 							style={{
@@ -92,7 +94,7 @@ const ApplicationNavigator = () => {
 				name="InterestRateAnalysis"
 				component={InterestRateAnalysis}
 				options={{
-					title: 'Interest Rate Analysis',
+					title: 'Interest Rate Calculator',
 					tabBarIcon: ({ focused }) => (
 						<Image
 							style={{

@@ -4,23 +4,35 @@
  *
  * @format
  */
-
-import { StatusBar, StyleSheet, useColorScheme } from 'react-native';
+import React from 'react';
+import {
+	StatusBar,
+	StyleSheet,
+	useColorScheme,
+	Platform,
+} from 'react-native';
 import ApplicationNavigator from './src/Navigators/ApplicationNavigator.tsx';
 import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+	const isDarkMode = useColorScheme() === 'dark';
 
-  return (
-    <>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <NavigationContainer>
-        <ApplicationNavigator />
-      </NavigationContainer>
-    </>
-  );
+	return (
+		<SafeAreaProvider>
+			<StatusBar
+				barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+				backgroundColor="transparent"
+				translucent={Platform.OS === 'android'}
+			/>
+			<NavigationContainer>
+				<ApplicationNavigator />
+			</NavigationContainer>
+		</SafeAreaProvider>
+	);
 }
+
+export default App;
 
 const styles = StyleSheet.create({
   container: {
